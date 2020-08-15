@@ -82,7 +82,8 @@
             style="width: 100%; height:90%; position: absolute; right: 0;margin-top: 20px; padding-bottom: 2px; ">
             <el-tab-pane label="用户管理" name="first">User: {{ userName }} , {{ userId}} , {{ departmentName }} |
               专业:{{major}}</el-tab-pane>
-            <el-tab-pane class="test" label="课程列表-专选" name="second" style="height: 100%;overflow: auto">
+            <el-tab-pane class="test" label="课程列表-专选" name="second"
+              style="height: 100%;overflow: auto; padding-right: 1%">
               <template>
                 <el-backtop target=".test" right="120">UP</el-backtop>
                 <el-table @cell-mouse-enter="handleHover"
@@ -121,8 +122,6 @@
                   </el-table-column>
                   <el-table-column label="CourseUnitName" prop="courseUnitName">
                   </el-table-column>
-                  <!-- <el-table-column label="ExamFormName" prop="examFormName">
-                    </el-table-column> -->
                   <el-table-column label="ScheduleExamTime" prop="scheduleExamTime">
                   </el-table-column>
                   <el-table-column label="Capacity" prop="capacity">
@@ -143,14 +142,18 @@
                       <el-input v-model="search1" size="mini" placeholder="输入关键字搜索" />
                     </template>
                     <template slot-scope="scope">
-                      <el-button size="mini" type="success" @click="handleEdit(scope.$index, scope.row)">Hello
+                      <el-button size="small" type="danger" v-if="scope.row.selectedStatus == '4' "
+                        @click="cancelCourse(scope.$index, scope.row)">退课</el-button>
+                      <el-button size="small" type="success" @click="chooseCourse(scope.$index, scope.row)" v-else>选课
+                        <!-- v-if="scope.row.courseSelectedNum != scope.row.baseReceiveNum" -->
                       </el-button>
                     </template>
                   </el-table-column>
                 </el-table>
               </template>
             </el-tab-pane>
-            <el-tab-pane class="test" label="课程列表-公选" name="third" style="height: 100%;overflow: auto">
+            <el-tab-pane class="test" label="课程列表-公选" name="third"
+              style="height: 100%;overflow: auto ;padding-right: 1%">
               <template>
                 <el-backtop target=".test" right="120">UP</el-backtop>
                 <el-table @cell-mouse-enter="handleHover"
@@ -211,7 +214,9 @@
                       <el-input v-model="search2" size="mini" placeholder="输入关键字搜索" />
                     </template>
                     <template slot-scope="scope">
-                      <el-button size="mini" type="success" @click="handleEdit(scope.$index, scope.row)">Hello
+                      <el-button size="small" type="danger" v-if="scope.row.selectedStatus == '4' "
+                        @click="cancelCourse(scope.$index, scope.row)">退课</el-button>
+                      <el-button size="small" type="success" @click="chooseCourse(scope.$index, scope.row)" v-else>选课
                       </el-button>
                     </template>
                   </el-table-column>
@@ -391,7 +396,24 @@
           }, 'UnInplement')
         });
       },
-
+      // IsHaveClass(index, row) {
+      //   // selectedStatus 1:选课 4:退课 0:无空位 2:失败
+      //   if (row.selectedStatus == "1") {
+      //     return true
+      //   } else if (row.selectedStatus == "4") {
+      //     return false
+      //   }
+      // },
+      chooseCourse(index, row) {
+        // TODO
+      },
+      cancelCourse(index, row) {
+        // TODO
+        // 处理满人的情况
+        if (scope.row.courseSelectedNum == scope.row.baseReceiveNum) {
+          // ...
+        }
+      },
       getCourse(t) {
         this.$http.get("/courseList?type=" + t).then(function (resp) {
           console.log(resp)

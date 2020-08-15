@@ -186,7 +186,7 @@ func (client *Client) getCourseList(payload string) ([]row, error) {
 	return totalCourses, nil
 }
 
-func (client *Client) courseChoose(choosePayload string) string {
+func (client *Client) courseChoose(choosePayload string) map[string]interface{} {
 	// courseSelectionChooseBody := `{"clazzId":"1201412705275330561","selectedType":"1","selectedCate":"21","check":true}` //专选 ,classid是teachingclassid
 	// {"clazzId":"1208910925716574209","selectedType":"4","selectedCate":"21","check":true} //公选
 	// {"code":52021104,"message":"你已选择过该课程，不能再选！","data":null}
@@ -201,10 +201,15 @@ func (client *Client) courseChoose(choosePayload string) string {
 	defer chooseResp.Body.Close()
 	b, _ := ioutil.ReadAll(chooseResp.Body)
 	log.Println(string(b))
-	return string(b)
+	var data map[string]interface{}
+	err := json.Unmarshal(b, &data)
+	if err != nil {
+		return nil
+	}
+	return data
 }
 
-func (client *Client) courseCancel(cancelPayload string) string {
+func (client *Client) courseCancel(cancelPayload string) map[string]interface{} {
 	// courseSelectionCancelBody := `{"courseId":"206169488","clazzId":"1201412705275330561","selectedType":"1"}`
 	// {"code":200,"message":null,"data":"退课成功！"}
 	// 多次退课都是退课成功
@@ -217,14 +222,19 @@ func (client *Client) courseCancel(cancelPayload string) string {
 	defer cancelResp.Body.Close()
 	b, _ := ioutil.ReadAll(cancelResp.Body)
 	log.Println(string(b))
-	return string(b)
+	var data map[string]interface{}
+	err := json.Unmarshal(b, &data)
+	if err != nil {
+		return nil
+	}
+	return data
 }
 
 func (client *Client) grabCourse(payload string, timeSeperate int) {
 	log.Println("开始抢课---|->")
 	for {
-		ans := client.courseChoose(payload)
-		if ans[8] == 2 { //200
+		resp := client.courseChoose(payload)
+		if resp["code"].(float64) == 200 {
 			log.Println("抢课成功")
 			break
 		} else { // 52021104  52021107

@@ -186,6 +186,40 @@ func courseInfo_handler(ctx *gin.Context) {
 	}
 }
 
+func courseChooseHandler(ctx *gin.Context) {
+	clazzId := ctx.Query("clazzId")
+	selectedType := ctx.Query("selectedType")
+	selectedCate := ctx.Query("selectedCate")
+	payload := `{"clazzId":"%s","selectedType":"%s","selectedCate":"%s","check":true}`
+	resp := client.courseChoose(fmt.Sprintf(payload, clazzId, selectedType, selectedCate))
+	if resp == nil {
+		ctx.JSON(200, gin.H{"state": "fail", "msg": "Json Parse Error"})
+	} else {
+		if resp["code"].(float64) != 200 {
+			ctx.JSON(200, gin.H{"state": "fail", "msg": resp["message"]})
+		} else {
+			ctx.JSON(200, gin.H{"state": "success", "msg": resp["data"]})
+		}
+	}
+}
+
+func courseCancelHandler(ctx *gin.Context) {
+	clazzId := ctx.Query("clazzId")
+	selectedType := ctx.Query("selectedType")
+	courseId := ctx.Query("courseId")
+	payload := `{"courseId":"%s","clazzId":"%s","selectedType":"%s"}`
+	resp := client.courseCancel(fmt.Sprintf(payload, courseId, clazzId, selectedType))
+	if resp == nil {
+		ctx.JSON(200, gin.H{"state": "fail", "msg": "Json Parse Error"})
+	} else {
+		if resp["code"].(float64) != 200 {
+			ctx.JSON(200, gin.H{"state": "fail", "msg": resp["message"]})
+		} else {
+			ctx.JSON(200, gin.H{"state": "success", "msg": resp["data"]})
+		}
+	}
+}
+
 func main() {
 	if client == nil {
 		log.Fatal("client == nil")
@@ -203,6 +237,8 @@ func main() {
 	rt.GET("/teacherInfo/img", teacherInfo_img)
 	rt.GET("/teacherInfo/email", teacherInfo_email)
 	rt.GET("/teacherInfo/all", teacherInfo_all)
+	rt.GET("/course/choose", courseChooseHandler)
+	rt.GET("/course/cancel", courseCancelHandler)
 	// rt.GET("/captcha", captcha)
 	// rt.POST("/login", loginHandler)
 	// rt.GET("/index", indexHandler)
