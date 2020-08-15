@@ -22,7 +22,7 @@
 ---
 ## 运行:
 1. 下载本仓库,或git clone  
-2. 先使用终端shell(win:powershell(建议不要用cmd))运行`./main` (注意一定是当前文件目录下,即只能输入`./main`,而不是`D:/../../main`)
+2. 直接鼠标双击打开 `main.exe` (最好使用shell:`./main`)
 3. 打开网页: `localhost:9999`
 ---
 ## 编译
