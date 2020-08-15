@@ -1,0 +1,420 @@
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js"></script>
+
+<html>
+
+<body>
+  <div id="app" style="height: 100%;">
+    <el-dialog :visible.sync="dialog_visible" title="最后的设置">
+      <el-form ref="form" :model="form" label-width="80px">
+        <el-form-item label="课程名称">
+          <el-input v-model="form.name" disabled="true"></el-input>
+        </el-form-item>
+        <el-form-item label="开课校园">
+          <el-input v-model="form.region" disabled="true" width=10px></el-input>
+        </el-form-item>
+        <el-divider></el-divider>
+        <el-form-item label="抢课时间">
+          <el-col :span="11">
+            <el-time-picker placeholder="Now" v-model="form.time1" style="width: 100%;" :disabled=true></el-time-picker>
+          </el-col>
+          <el-col class="line" :span="2" style="padding-left:4%"> -</el-col>
+          <el-col :span="11">
+            <el-time-select placeholder="结束时间" v-model="form.time2"
+              :picker-options="{start: '06:00',step: '00:15',end: '24:00',minTime: startTime}">
+          </el-col>
+        </el-form-item>
+        <el-form-item label="时间不定">
+          <el-tooltip class="item" effect="dark" content="无停止时间,直到显式停止抢课或电脑关机" placement="top">
+            <el-switch v-model="form.no_time_limit" style="padding-top:1.7%"></el-switch>
+          </el-tooltip>
+        </el-form-item>
+        <el-divider></el-divider>
+        <el-form-item label="抢课频率">
+          <el-select v-model="form.freq" placeholder="请选择抢课频率">
+            <el-option label="0.1s" value="msec_100"></el-option>
+            <el-option label="0.5s" value="msec_500"></el-option>
+            <el-option label="1s" value="sec_1"></el-option>
+            <el-option label="2s" value="sec_2"></el-option>
+            <el-option label="5s" value="sec_5"></el-option>
+            <el-option label="10s" value="sec_10"></el-option>
+            <el-option label="15s" value="sec_15"></el-option>
+            <el-option label="30s" value="sec_30"></el-option>
+            <el-option label="1min" value="min_1"></el-option>
+            <el-option label="5min" value="min_5"></el-option>
+            <el-option label="10min" value="min_10"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="特殊资源">
+          <el-radio-group v-model="form.resource">
+            <el-radio label="线上品牌商赞助"></el-radio>
+            <el-radio label="线下场地免费"></el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="活动形式">
+          <el-input type="textarea" v-model="form.desc"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="onSubmit">立即抢课</el-button>
+          <el-button @click="dialog_visible = false">取消</el-button>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
+
+    <el-dialog :visible.sync="bigImgVisible" title="TeacherImg">
+      <el-image :src="bigImgSrc" style="height: 500px;width: 400px;"></el-image>
+    </el-dialog>
+
+    <el-container style=" height: 100%; ">
+      <el-header style="margin-bottom: 1px;">
+        <h1><a @click="clickIndex" href="javascript:void(0);"><img src=""></img></a>
+        </h1>
+        <el-divider></el-divider>
+      </el-header>
+      <el-main style="position: relative;">
+        <template>
+          <el-tabs v-model="activeName" @tab-click="handleClick" tab-position="left"
+            style="width: 100%; height:90%; position: absolute; right: 0;margin-top: 20px; padding-bottom: 2px; ">
+            <el-tab-pane label="用户管理" name="first">User: {{ userName }} , {{ userId}} , {{ departmentName }} |
+              专业:{{major}}</el-tab-pane>
+            <el-tab-pane class="test" label="课程列表-专选" name="second" style="height: 100%;overflow: auto">
+              <template>
+                <el-backtop target=".test" right="120">UP</el-backtop>
+                <el-table
+                  :data="tableData1.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
+                  style="width: 100%">
+                  <el-table-column label="CourseNum" prop="courseNum">
+                  </el-table-column>
+                  <el-table-column label="CourseName" prop="courseName">
+                  </el-table-column>
+                  <el-table-column label="TeacherName">
+                    <template slot-scope="scope">
+                      <el-popover trigger="hover" placement="top">
+                        <p>{{getTeacherInfo(scope.$index,scope.row)}}</p>
+                        <p>课程负责人: {{scope.row.bossName}} </p>
+                        <p>Email: {{scope.row.email}}</p>
+                        <p>Age: {{scope.row.age}} </p>
+                        <p>bestDegreeName: {{scope.row.bestDegreeName}} </p>
+                        <div slot="reference" class="name-wrapper">
+                          <el-tag>
+                            {{scope.row.teachingTimePlace.split(";")[0]}}</el-tag>
+                        </div>
+                      </el-popover>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Time" width="300px">
+                    <template slot-scope="scope">
+                      <el-popover trigger="hover" placement="top">
+                        <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 15px;">{{it}}</p>
+                        <div slot="reference" class="name-wrapper">
+                          <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 1px;">
+                            {{it}}</p>
+                        </div>
+                      </el-popover>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Credit" prop="credit">
+                  </el-table-column>
+                  <el-table-column label="CourseUnitName" prop="courseUnitName">
+                  </el-table-column>
+                  <!-- <el-table-column label="ExamFormName" prop="examFormName">
+                    </el-table-column> -->
+                  <el-table-column label="ScheduleExamTime" prop="scheduleExamTime">
+                  </el-table-column>
+                  <el-table-column label="Capacity" prop="capacity">
+                    <template slot-scope="scope">
+                      <el-tag :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'danger':'success'">
+                        {{scope.row.courseSelectedNum}}/{{scope.row.baseReceiveNum}}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="img">
+                    <template slot-scope="scope">
+                      <el-image size="mini" :src="getTeacherImg(scope.$index, scope.row)"
+                        style="width: 50px; height: 60px;cursor:pointer" @click="showBigImg(scope.$index, scope.row)">
+                      </el-image>
+                    </template>
+                  </el-table-column>
+                  <el-table-column align="right">
+                    <template slot="header" slot-scope="scope">
+                      <el-input v-model="search1" size="mini" placeholder="输入关键字搜索" />
+                    </template>
+                    <template slot-scope="scope">
+                      <el-button size="mini" type="success" @click="handleEdit(scope.$index, scope.row)">Hello
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </template>
+            </el-tab-pane>
+            <el-tab-pane class="test" label="课程列表-公选" name="third" style="height: 100%;overflow: auto">
+              <template>
+                <el-backtop target=".test" right="120">UP</el-backtop>
+                <el-table
+                  :data="tableData2.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
+                  style="width: 100%">
+                  <el-table-column label="CourseNum" prop="courseNum">
+                  </el-table-column>
+                  <el-table-column label="CourseName" prop="courseName">
+                  </el-table-column>
+                  <el-table-column label="TeacherName">
+                    <template slot-scope="scope">
+                      <el-popover trigger="hover" placement="top">
+                        <p> {{getTeacherInfo(scope.$index,scope.row)}}</p>
+                        <p>课程负责人: {{scope.row.bossName}} </p>
+                        <p>Email:{{scope.row.email}}</p>
+                        <p>Age: {{scope.row.age}} </p>
+                        <p>bestDegreeName: {{scope.row.bestDegreeName}} </p>
+                        <div slot="reference" class="name-wrapper">
+                          <el-tag>
+                            {{scope.row.teachingTimePlace.split(";")[0]}}</el-tag>
+                        </div>
+                      </el-popover>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Time" width="300px">
+                    <template slot-scope="scope">
+                      <el-popover trigger="hover" placement="top">
+                        <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 15px;">{{it}}</p>
+                        <div slot="reference" class="name-wrapper">
+                          <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 1px;">
+                            {{it}}</p>
+                        </div>
+                      </el-popover>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Credit" prop="credit">
+                  </el-table-column>
+                  <el-table-column label="CourseUnitName" prop="courseUnitName">
+                  </el-table-column>
+                  <!-- <el-table-column label="ExamFormName" prop="examFormName">
+                  </el-table-column> -->
+                  <el-table-column label="ScheduleExamTime" prop="scheduleExamTime">
+                  </el-table-column>
+                  <el-table-column label="Capacity" prop="capacity">
+                    <template slot-scope="scope">
+                      <el-tag :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'danger':'success'">
+                        {{scope.row.courseSelectedNum}}/{{scope.row.baseReceiveNum}}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="img">
+                    <template slot-scope="scope">
+                      <el-image size="mini" :src="getTeacherImg(scope.$index, scope.row)"
+                        style="width: 50px; height: 60px;cursor:pointer" @click="showBigImg(scope.$index, scope.row)">
+                      </el-image>
+                    </template>
+                  </el-table-column>
+                  <el-table-column align="right">
+                    <template slot="header" slot-scope="scope">
+                      <el-input v-model="search2" size="mini" placeholder="输入关键字搜索" />
+                    </template>
+                    <template slot-scope="scope">
+                      <el-button size="mini" type="success" @click="handleEdit(scope.$index, scope.row)">Hello
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </template>
+            </el-tab-pane>
+
+            <el-tab-pane label="定时任务补偿" name="fourth">定时任务补偿</el-tab-pane>
+          </el-tabs>
+        </template>
+      </el-main>
+    </el-container>
+  </div>
+</body>
+
+</html>
+
+<script>
+  new Vue({
+    el: "#app",
+    data: function () {
+      return {
+        userName: "Not Login",
+        userId: "Not Login",
+        departmentName: "Not Login",
+        token: "Not Login",
+        activeName: 'first',
+        dialog_visible: false,
+        bigImgVisible: false,
+        bigImgSrc: "",
+        form: {
+          name: 'fdsa',
+          region: 'fdas',
+          time1: 'Now',
+          time2: '',
+          no_time_limit: false,
+          type: [],
+          resource: '',
+          desc: ''
+        },
+
+        tableData1: [],
+        tableData2: [],
+        search1: '',
+        search2: '',
+      }
+    },
+    created() {
+
+    },
+    mounted() {
+      // this.$message("mounted")
+      this.$http.get("/userInfo").then(function (resp) {
+        if (resp.body.state == "fail") {
+          this.$message.error(resp.status.toString() + "\t未登录哦!")
+          this.$notify({
+            title: "1s后跳转"
+          })
+          setTimeout(() => {
+            window.location.replace("/")
+          }, 1000)
+        }
+        this.userName = resp.body.data.name
+        this.userId = resp.body.data.id
+        this.departmentName = resp.body.data.school
+        this.major = resp.body.data.major
+        this.$message({
+          message: "欢迎你 " + resp.body.data.name,
+          type: "success"
+        })
+      }).catch(function (e) {
+        this.$message.error(e + " -_-")
+      })
+
+      this.getCourse("public")
+      this.getCourse("major")
+
+    },
+    methods: {
+      handleEdit(index, row) {
+        this.form = this.dialogEmpty()
+        this.form = this.getCourseDetail(index, row)
+        this.dialog_visible = true
+      },
+      getTeacherImg(index, row) {
+        return "/teacherInfo/img?courseNum=" + row.courseNum
+      },
+      showBigImg(index, row) {
+        this.bigImgSrc = this.getTeacherImg(index, row)
+        this.bigImgVisible = true
+      },
+      dialogEmpty() {
+        return {
+          name: 'fdsa',
+          region: 'fdas',
+          time1: 'Now',
+          time2: '23:59:59',
+          no_time_limit: false,
+          type: [],
+          resource: '',
+          desc: ''
+        }
+      },
+      getCourseDetail(index, row) {
+        return {
+          name: row.courseName,
+          region: 'null',
+          time1: 'Now',
+          time2: '23:59:59',
+          no_time_limit: false,
+          type: [],
+          resource: '',
+          desc: ''
+        }
+      },
+      getTeacherEmail(index, row) {
+        this.$http.get("/teacherInfo/email?courseNum=" + row.courseNum).then(function (resp) {
+          if (resp.body.state == "success") {
+            // console.log(resp.body.data)
+            row.email = resp.body.data
+            return resp.body.data
+          } else {
+            row.email = resp.body.msg
+            return resp.body.msg
+          }
+        }).catch(function (e) {
+          console.log("Get TeacherEmail:" + e.toString())
+        })
+      },
+      getTeacherInfo(index, row) {
+        var a = "加载中"
+        row.email = a
+        row.age = a
+        row.bossName = a
+        row.bestDegreeName = a
+        //注意这个请求是异步的
+        this.$http.get("/teacherInfo/all?courseNum=" + row.courseNum).then(function (resp) {
+          if (resp.body.state == "success") {
+            console.log(resp.body.data)
+            row.email = resp.body.data.email
+            row.age = resp.body.data.birthDate
+            row.bossName = resp.body.data.name
+            row.bestDegreeName = resp.body.data.bestDegreeName
+          }
+        }).catch(function (e) {
+          console.log("Get TeacherInfo:" + e.toString())
+        })
+      },
+      clickIndex() {
+        const h = this.$createElement;
+
+        this.$notify({
+          title: 'HelloWorld',
+          message: h('i', {
+            style: 'color: teal'
+          }, 'UnInplement')
+        });
+      },
+
+      getCourse(t) {
+        this.$http.get("/courseList?type=" + t).then(function (resp) {
+          console.log(resp)
+          if (resp.body.state == "success") {
+
+            if (t == "public")
+              this.tableData2 = resp.body.data
+            else
+              this.tableData1 = resp.body.data
+          } else {
+            this.$notify({
+              title: "Error",
+              message: resp.body.msg + " ",
+            })
+          }
+          console.log(resp.body.data)
+        }).catch(function (e) {
+          this.$notify({
+            title: "ERROR",
+            message: "getCourseList " + e.toString()
+          })
+        })
+      }
+    },
+  })
+</script>
+
+<style type="text/css">
+  html,
+  body {
+    height: 100%;
+
+    margin: 0;
+  }
+
+  .el-header {
+    /* background-color: aqua; */
+  }
+
+  /* .el-main {
+    padding-left: 10%;
+    padding-right: 10%;
+  } */
+
+  .el-tabs {
+    margin-top: 50px;
+  }
+</style>
