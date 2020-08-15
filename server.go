@@ -133,11 +133,15 @@ func userInfo(ctx *gin.Context) {
 
 func teacherInfo_img(ctx *gin.Context) {
 	courseNum := ctx.Query("courseNum")
-	info := client.getTeacherInfo(courseNum, "")
-	if info == nil {
-		ctx.JSON(200, gin.H{"state": "fail", "msg": "无课程大纲"})
+	teacherId := ctx.Query("id")
+	if teacherId == "" {
+		info := client.getTeacherInfo(courseNum, "")
+		if info == nil {
+			ctx.JSON(200, gin.H{"state": "fail", "msg": "无课程大纲"})
+			return
+		}
+		teacherId = info["id"].(string)
 	}
-	teacherId := info["id"].(string)
 	fmt.Println("CourseNum:", courseNum, "teacherId:", teacherId)
 	b, err := client.getTeacherImg(teacherId, "")
 	if err != nil {
@@ -164,9 +168,13 @@ func teacherInfo_email(ctx *gin.Context) {
 func teacherInfo_all(ctx *gin.Context) {
 	courseNum := ctx.Query("courseNum")
 	info := client.getTeacherInfo(courseNum, "")
-	// teacherId := info["email"].(string)
 	fmt.Println("CourseNum:", courseNum, " | teacherInfo_ALL")
-	ctx.JSON(200, gin.H{"state": "success", "msg": "ok", "data": info})
+
+	if info == nil {
+		ctx.JSON(200, gin.H{"state": "fail", "msg": "Not Exist"})
+	} else {
+		ctx.JSON(200, gin.H{"state": "success", "msg": "ok", "data": info})
+	}
 }
 
 func courseInfo_handler(ctx *gin.Context) {

@@ -1,9 +1,12 @@
-<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-<script src="https://unpkg.com/vue/dist/vue.js"></script>
-<script src="https://unpkg.com/element-ui/lib/index.js"></script>
-<script src="https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js"></script>
-
 <html>
+
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <link rel="shortcut icon" href="/view/pic/favicon.ico?refreash" type="image/x-icon">
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+  <script src="https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js"></script>
+</head>
 
 <body>
   <div id="app" style="height: 100%;">
@@ -82,7 +85,7 @@
             <el-tab-pane class="test" label="课程列表-专选" name="second" style="height: 100%;overflow: auto">
               <template>
                 <el-backtop target=".test" right="120">UP</el-backtop>
-                <el-table
+                <el-table @cell-mouse-enter="handleHover"
                   :data="tableData1.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
                   style="width: 100%">
                   <el-table-column label="CourseNum" prop="courseNum">
@@ -92,9 +95,8 @@
                   <el-table-column label="TeacherName">
                     <template slot-scope="scope">
                       <el-popover trigger="hover" placement="top">
-                        <p>{{getTeacherInfo(scope.$index,scope.row)}}</p>
                         <p>课程负责人: {{scope.row.bossName}} </p>
-                        <p>Email: {{scope.row.email}}</p>
+                        <p>Email:{{scope.row.email}}</p>
                         <p>Age: {{scope.row.age}} </p>
                         <p>bestDegreeName: {{scope.row.bestDegreeName}} </p>
                         <div slot="reference" class="name-wrapper">
@@ -131,8 +133,8 @@
                   </el-table-column>
                   <el-table-column label="img">
                     <template slot-scope="scope">
-                      <el-image size="mini" :src="getTeacherImg(scope.$index, scope.row)"
-                        style="width: 50px; height: 60px;cursor:pointer" @click="showBigImg(scope.$index, scope.row)">
+                      <el-image size="mini" :src="scope.row.imgSrc" style="width: 50px; height: 60px;cursor:pointer"
+                        @click="showBigImg(scope.$index, scope.row)">
                       </el-image>
                     </template>
                   </el-table-column>
@@ -151,7 +153,7 @@
             <el-tab-pane class="test" label="课程列表-公选" name="third" style="height: 100%;overflow: auto">
               <template>
                 <el-backtop target=".test" right="120">UP</el-backtop>
-                <el-table
+                <el-table @cell-mouse-enter="handleHover"
                   :data="tableData2.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
                   style="width: 100%">
                   <el-table-column label="CourseNum" prop="courseNum">
@@ -161,7 +163,6 @@
                   <el-table-column label="TeacherName">
                     <template slot-scope="scope">
                       <el-popover trigger="hover" placement="top">
-                        <p> {{getTeacherInfo(scope.$index,scope.row)}}</p>
                         <p>课程负责人: {{scope.row.bossName}} </p>
                         <p>Email:{{scope.row.email}}</p>
                         <p>Age: {{scope.row.age}} </p>
@@ -200,8 +201,8 @@
                   </el-table-column>
                   <el-table-column label="img">
                     <template slot-scope="scope">
-                      <el-image size="mini" :src="getTeacherImg(scope.$index, scope.row)"
-                        style="width: 50px; height: 60px;cursor:pointer" @click="showBigImg(scope.$index, scope.row)">
+                      <el-image size="mini" :src="scope.row.imgSrc" style="width: 50px; height: 60px;cursor:pointer"
+                        @click="showBigImg(scope.$index, scope.row)">
                       </el-image>
                     </template>
                   </el-table-column>
@@ -295,8 +296,16 @@
         this.form = this.getCourseDetail(index, row)
         this.dialog_visible = true
       },
-      getTeacherImg(index, row) {
-        return "/teacherInfo/img?courseNum=" + row.courseNum
+      handleHover(row, column, cell, event) {
+        // this.$message(row.index) // this is ok
+        if (row.isLoad == true) return
+        this.getTeacherInfo(row)
+      },
+      // getTeacherImg(index, row) {
+      //   return "/teacherInfo/img?courseNum=" + row.courseNum
+      // },
+      getTeacherImgWithId(id) {
+        return "/teacherInfo/img?id=" + id
       },
       showBigImg(index, row) {
         this.bigImgSrc = this.getTeacherImg(index, row)
@@ -340,20 +349,33 @@
           console.log("Get TeacherEmail:" + e.toString())
         })
       },
-      getTeacherInfo(index, row) {
+      getTeacherInfo(row) {
+        row.isLoad = true
         var a = "加载中"
-        row.email = a
-        row.age = a
-        row.bossName = a
-        row.bestDegreeName = a
+        this.$set(row, "email", a)
+        this.$set(row, "age", a)
+        this.$set(row, "bossName", a)
+        this.$set(row, "bestDegreeName", a)
+        this.$set(row, "id", a)
+        this.$set(row, "imgSrc", "")
         //注意这个请求是异步的
         this.$http.get("/teacherInfo/all?courseNum=" + row.courseNum).then(function (resp) {
           if (resp.body.state == "success") {
-            console.log(resp.body.data)
-            row.email = resp.body.data.email
-            row.age = resp.body.data.birthDate
-            row.bossName = resp.body.data.name
-            row.bestDegreeName = resp.body.data.bestDegreeName
+            // console.log(resp.body.data)
+            data = resp.body.data
+            row.email = data.email
+            row.age = data.birthDate
+            row.bossName = data.name
+            row.bestDegreeName = data.bestDegreeName
+            row.id = data.id
+            row.imgSrc = this.getTeacherImgWithId(row.id)
+          } else {
+            str = "不存在"
+            row.email = str
+            row.age = str
+            row.bossName = str
+            row.bestDegreeName = str
+            row.id = data.str
           }
         }).catch(function (e) {
           console.log("Get TeacherInfo:" + e.toString())
