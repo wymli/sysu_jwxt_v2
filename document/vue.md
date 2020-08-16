@@ -36,3 +36,21 @@
 <el-backtop target=".test" right="120">UP</el-backtop>
 给予内容对象 class="test"即可
 ```
+6. 标签页切换事件
+   1. v-model 双向绑定  然后watch
+   2. @tab-click 监听事件 handleClick(tab, event)
+```html
+<el-tab v-model="activeName">
+  <el-tab-pane name="first"></el-tab-pane>
+  <el-tab-pane name="second"></el-tab-pane>
+  <el-tab-pane name="third"></el-tab-pane>
+</el-tabs>
+
+new Vue({
+  watch:{
+    "activeName" : function(val){
+      //这里val = name
+    }
+  }
+})
+```
