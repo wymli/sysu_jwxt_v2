@@ -2,7 +2,7 @@
 
 <head>
   <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-  <link rel="shortcut icon" href="/view/pic/favicon.ico?refreash" type="image/x-icon">
+  <link rel="shortcut icon" href="/view/pic/favicon.ico" type="image/x-icon">
   <script src="https://unpkg.com/vue/dist/vue.js"></script>
   <script src="https://unpkg.com/element-ui/lib/index.js"></script>
   <script src="https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js"></script>
@@ -83,7 +83,7 @@
             <el-tab-pane label="用户管理" name="first">User: {{ userName }} , {{ userId}} , {{ departmentName }} |
               专业:{{major}}</el-tab-pane>
             <el-tab-pane class="test" label="课程列表-专选" name="second"
-              style="height: 100%;overflow: auto; padding-right: 1%">
+              style="height: 100%;overflow: auto ;padding-right: 1%">
               <template>
                 <el-backtop target=".test" right="120">UP</el-backtop>
                 <el-table @cell-mouse-enter="handleHover"
@@ -122,6 +122,8 @@
                   </el-table-column>
                   <el-table-column label="CourseUnitName" prop="courseUnitName">
                   </el-table-column>
+                  <!-- <el-table-column label="ExamFormName" prop="examFormName">
+                  </el-table-column> -->
                   <el-table-column label="ScheduleExamTime" prop="scheduleExamTime">
                   </el-table-column>
                   <el-table-column label="Capacity" prop="capacity">
@@ -142,10 +144,14 @@
                       <el-input v-model="search1" size="mini" placeholder="输入关键字搜索" />
                     </template>
                     <template slot-scope="scope">
-                      <el-button size="small" type="danger" v-if="scope.row.selectedStatus == '4' "
-                        @click="cancelCourse(scope.$index, scope.row)">退课</el-button>
-                      <el-button size="small" type="success" @click="chooseCourse(scope.$index, scope.row)" v-else>选课
-                        <!-- v-if="scope.row.courseSelectedNum != scope.row.baseReceiveNum" -->
+                      <el-button size="small" type="danger" :loading="scope.row.isButtonLoading"
+                        v-if="scope.row.selectedStatus == '4' " @click="cancelCourse(scope.$index, scope.row,'major')">
+                        退课
+                      </el-button>
+                      <el-button size="small" :loading="scope.row.isButtonLoading"
+                        :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'info' : 'success'"
+                        :disabled="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? true:false"
+                        @click="chooseCourse(scope.$index, scope.row , 'public')" v-else>选课
                       </el-button>
                     </template>
                   </el-table-column>
@@ -214,9 +220,14 @@
                       <el-input v-model="search2" size="mini" placeholder="输入关键字搜索" />
                     </template>
                     <template slot-scope="scope">
-                      <el-button size="small" type="danger" v-if="scope.row.selectedStatus == '4' "
-                        @click="cancelCourse(scope.$index, scope.row)">退课</el-button>
-                      <el-button size="small" type="success" @click="chooseCourse(scope.$index, scope.row)" v-else>选课
+                      <el-button size="small" type="danger" :loading="scope.row.isButtonLoading"
+                        v-if="scope.row.selectedStatus == '4' " @click="cancelCourse(scope.$index, scope.row,'public')">
+                        退课
+                      </el-button>
+                      <el-button size="small" :loading="scope.row.isButtonLoading"
+                        :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'info' : 'success'"
+                        :disabled="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? true:false"
+                        @click="chooseCourse(scope.$index, scope.row , 'public')" v-else>选课
                       </el-button>
                     </template>
                   </el-table-column>
@@ -267,32 +278,21 @@
     created() {
 
     },
-    mounted() {
-      // this.$message("mounted")
-      this.$http.get("/userInfo").then(function (resp) {
-        if (resp.body.state == "fail") {
-          this.$message.error(resp.status.toString() + "\t未登录哦!")
-          this.$notify({
-            title: "1s后跳转"
-          })
-          setTimeout(() => {
-            window.location.replace("/")
-          }, 1000)
+    watch: {
+      'activeName': function (val) { //监听切换状态-计划单
+        if (val == "second") {
+          this.getAndSetCourse("major")
+        } else if (val == "third") {
+          this.getAndSetCourse("public")
         }
-        this.userName = resp.body.data.name
-        this.userId = resp.body.data.id
-        this.departmentName = resp.body.data.school
-        this.major = resp.body.data.major
-        this.$message({
-          message: "欢迎你 " + resp.body.data.name,
-          type: "success"
-        })
-      }).catch(function (e) {
-        this.$message.error(e + " -_-")
-      })
+      },
+    },
+    mounted() {
+      this.getAndSetUserInfo()
 
-      this.getCourse("public")
-      this.getCourse("major")
+      // moved to watch()
+      // this.getAndSetCourse("public")
+      // this.getAndSetCourse("major")
 
     },
     methods: {
@@ -327,6 +327,29 @@
           resource: '',
           desc: ''
         }
+      },
+      getAndSetUserInfo() {
+        this.$http.get("/userInfo").then(function (resp) {
+          if (resp.body.state == "fail") {
+            this.$message.error(resp.status.toString() + "\t未登录哦!")
+            this.$notify({
+              title: "1s后跳转"
+            })
+            setTimeout(() => {
+              window.location.replace("/")
+            }, 1000)
+          }
+          this.userName = resp.body.data.name
+          this.userId = resp.body.data.id
+          this.departmentName = resp.body.data.school
+          this.major = resp.body.data.major
+          this.$message({
+            message: "欢迎你 " + resp.body.data.name,
+            type: "success"
+          })
+        }).catch(function (e) {
+          this.$message.error(e + " -_-")
+        })
       },
       getCourseDetail(index, row) {
         return {
@@ -404,17 +427,95 @@
       //     return false
       //   }
       // },
-      chooseCourse(index, row) {
-        // TODO
-      },
-      cancelCourse(index, row) {
-        // TODO
-        // 处理满人的情况
-        if (scope.row.courseSelectedNum == scope.row.baseReceiveNum) {
-          // ...
+      createTypeAndCate(row) {
+        row.selectedCate = row.courseCateCode
+        switch (row.courseCateCode) {
+          case "10":
+            // 公必
+            row.selectedType = "1"
+            break;
+          case "30":
+            // 公选
+            row.selectedType = "4"
+            break
+          case "11":
+            // 专必
+            row.selectedType = "1"
+            break;
+          case "21":
+            // 专选
+            row.selectedType = "1"
         }
       },
-      getCourse(t) {
+      chooseCourse(index, row, type) {
+        // type = "public" or "major"
+
+        // className: "1" == t.crossMajor ? "kzy" : "10" == t.courseCateCode ? "gb" : "30" == t.courseCateCode ? "gx" : "11" == t.courseCateCode ? "zb" : "zx"
+        //             , "1" == t.crossMajor ? "跨专业" : t.courseCategoryName)), b.d
+        // 选择跨专业课程中,可能是别人的专必专选
+
+        //锁住button
+        this.$set(row, "isButtonLoading", true)
+        this.createTypeAndCate(row)
+        url = "/course/choose?clazzId=" + row.teachingClassId + "&selectedType=" + row.selectedType +
+          "&selectedCate=" + row.selectedCate
+        this.$http.get(url).then(function (resp) {
+          if (resp.body.state == "success") {
+            //refresh tableData
+            this.getAndSetCourse(type)
+
+            //show feedback message
+            this.$notify({
+              title: row.courseName,
+              message: resp.body.msg
+            })
+            return true
+          } else {
+            row.isButtonLoading = false
+            this.$notify.error({
+              title: row.courseName,
+              message: resp.body.msg
+            })
+            return false
+          }
+        }).catch(function (e) {
+          this.$notify.error({
+            title: "ERROR",
+            message: e
+          })
+        })
+      },
+      cancelCourse(index, row, type) {
+        // type = "public" or "major"
+        // 处理满人的情况,其实已经处理,这里可以删去
+        if (row.courseSelectedNum == row.baseReceiveNum) {
+          return
+        }
+        this.createTypeAndCate(row)
+        url = "/course/cancel?clazzId=" + row.teachingClassId + "&selectedType=" + row.selectedType +
+          "&courseId=" + row.courseId
+        this.$http.get(url).then(function (resp) {
+          if (resp.body.state == "success") {
+            //refresh tableData
+            this.getAndSetCourse(type)
+
+            //show feedback message
+            this.$notify({
+              title: row.courseName,
+              message: resp.body.msg
+            })
+            return true
+          } else {
+            row.isButtonLoading = false
+            this.$notify.error({
+              title: row.courseName,
+              message: resp.body.msg
+            })
+            return false
+          }
+        })
+      },
+      getAndSetCourse(t) {
         this.$http.get("/courseList?type=" + t).then(function (resp) {
           console.log(resp)
           if (resp.body.state == "success") {
@@ -433,7 +534,7 @@
         }).catch(function (e) {
           this.$notify({
             title: "ERROR",
-            message: "getCourseList " + e.toString()
+            message: "getAndSetCourseList " + e.toString()
           })
         })
       }
