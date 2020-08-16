@@ -9,35 +9,33 @@
 </head>
 
 
-<body>
-  <div id="app">
-    <el-button @click="form={username:'',password:''} ;dialogFormVisible = true"
-      style="display:block;position:absolute;top:50%;left:50%; background-color: rgba(31, 29, 29, 0.4)" type="info"
-      plain>点击登陆
+<body style="width: 100%;height: 100%;">
+  <div id="app" style="width: 100%;height: 100%;">
+    <el-button @click="form={username:'',password:'',captcha:''} ;dialogFormVisible = true"
+      style="width:fit-content;height:fit-content;position:absolute;top:0;left:0;right:0;bottom:0;margin:auto auto; background-color: rgba(31, 29, 29, 0.4)"
+      type="info" plain>点击登陆
     </el-button>
     <el-dialog title="登陆" :visible.sync="dialogFormVisible" v-loading.sync="dialogLoading">
       <el-form :model="form" @submit.prevent="login">
         <el-form-item label="用户名" :label-width="formLabelWidth">
-          <el-input v-model="form.username" autocomplete="off" clearable></el-input>
+          <el-input v-model="form.username" autocomplete="off" style="width: 90%;" clearable></el-input>
         </el-form-item>
         <el-form-item label="密码" :label-width="formLabelWidth">
-          <el-input v-model="form.password" autocomplete="off" show-password></el-input>
+          <el-input v-model="form.password" autocomplete="off" style="width: 90%;" show-password></el-input>
         </el-form-item>
 
-        <div style="width: 100%; ">
-          <el-input placeholder="captcha" v-model="form.captcha" style="width: 25%; position: absolute; right: 20%;">
-            <template slot="prepend">验证码</template>
+        <el-form-item>
+          <el-input placeholder="captcha" v-model="form.captcha" style="width: 25%; float:left;left:16.5%">
+            <el-image slot="append" :src="captchaURL" fit="cover">
+            </el-image>>
           </el-input>
-          <el-image style="width: 100px; height: 40px;position: absolute; right: 17%; " :src="captchaURL" fit="cover">
-          </el-image>
-          <el-checkbox v-model="remember_psw" style="position: absolute; right: 3%;">记住密码</el-checkbox>
-        </div>
+          <div style="float:right;margin-right: 8.5%;">
+            <el-button @click="dialogFormVisible = false;">取 消</el-button>
+            <el-button type="submit" @click="login">确 定</el-button>
+          </div>
+        </el-form-item>
       </el-form>
 
-      <div slot="footer" class="dialog-footer" style="margin-top: 10px; ">
-        <el-button @click="dialogFormVisible = false">取 消</el-button>
-        <el-button type="submit" @click="login">确 定</el-button>
-      </div>
     </el-dialog>
   </div>
 </body>
@@ -50,7 +48,6 @@
     data() {
       return {
         captchaURL: "/view/pic/captcha.jpg?refresh",
-        remember_psw: false,
         dialogFormVisible: true,
         dialogLoading: false,
         form: {
@@ -62,26 +59,9 @@
       };
     },
     methods: {
-      // cookieExist() {
-      //   var x = document.cookie;
-      //   if (x.length != 0) {
-      //     datas = x.split("=")
-      //     this.$message("检测到cookie存在")
-      //     return {
-      //       username: datas[0],
-      //       password: datas[1]
-      //     }
-      //   } else {
-      //     return {
-      //       username: 'fdsa',
-      //       password: 'fdsa'
-      //     }
-      //   }
-      // },
       login() {
-        // this.dialogFormVisible = false;
         var formData = JSON.stringify(this.form)
-        this.$message(formData);
+        // this.$message(formData);
         this.$http.post("/", formData).then(function (resp) {
           var json_str = JSON.stringify(resp.body)
           var data = JSON.parse(json_str)
@@ -91,10 +71,6 @@
           });
           if (data.state == "success") {
             this.$message("登陆成功!\n正在跳转...");
-            // 记住密码?
-            // if (this.remember_psw && this.cookieExist().username != '') {
-            //   document.cookie = this.form.username + "=" + this.form.password;
-            // }
             window.location.replace("/index")
           }
 
