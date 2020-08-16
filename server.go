@@ -190,16 +190,11 @@ func courseChooseHandler(ctx *gin.Context) {
 	clazzId := ctx.Query("clazzId")
 	selectedType := ctx.Query("selectedType")
 	selectedCate := ctx.Query("selectedCate")
-	payload := `{"clazzId":"%s","selectedType":"%s","selectedCate":"%s","check":true}`
-	resp := client.courseChoose(fmt.Sprintf(payload, clazzId, selectedType, selectedCate))
-	if resp == nil {
-		ctx.JSON(200, gin.H{"state": "fail", "msg": "Json Parse Error"})
+	ok, msg := client.courseChoose(clazzId, selectedType, selectedCate)
+	if ok {
+		ctx.JSON(200, gin.H{"state": "success", "msg": msg})
 	} else {
-		if resp["code"].(float64) != 200 {
-			ctx.JSON(200, gin.H{"state": "fail", "msg": resp["message"]})
-		} else {
-			ctx.JSON(200, gin.H{"state": "success", "msg": resp["data"]})
-		}
+		ctx.JSON(200, gin.H{"state": "fail", "msg": msg})
 	}
 }
 
@@ -207,16 +202,11 @@ func courseCancelHandler(ctx *gin.Context) {
 	clazzId := ctx.Query("clazzId")
 	selectedType := ctx.Query("selectedType")
 	courseId := ctx.Query("courseId")
-	payload := `{"courseId":"%s","clazzId":"%s","selectedType":"%s"}`
-	resp := client.courseCancel(fmt.Sprintf(payload, courseId, clazzId, selectedType))
-	if resp == nil {
-		ctx.JSON(200, gin.H{"state": "fail", "msg": "Json Parse Error"})
+	ok, msg := client.courseCancel(courseId, clazzId, selectedType)
+	if ok {
+		ctx.JSON(200, gin.H{"state": "success", "msg": msg})
 	} else {
-		if resp["code"].(float64) != 200 {
-			ctx.JSON(200, gin.H{"state": "fail", "msg": resp["message"]})
-		} else {
-			ctx.JSON(200, gin.H{"state": "success", "msg": resp["data"]})
-		}
+		ctx.JSON(200, gin.H{"state": "fail", "msg": msg})
 	}
 }
 

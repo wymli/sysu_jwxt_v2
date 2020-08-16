@@ -54,3 +54,19 @@ new Vue({
   }
 })
 ```
+7. 按钮大小自动适应内部文字
+```html
+<el-button style="width:fit-content;height:fit-content;" />
+```
+8. 按钮放置于屏幕中央
+```html
+<el-button style="width:fit-content;height:fit-content;position:absolute;top:0;left:0;right:0;bottom:0;margin:auto auto;" />
+<!-- 思路就是外边距边界为整个屏幕,然后调整外边距
+所以这个的父元素要 `width:100% height:100%` -->
+```
+9. 子元素在父元素中的左右浮动
+```html
+子元素设置float:right; 然后通过外边距边界微调:right/left:5%
+有时候right/left不行(不知道为什么),可以使用margin-left/margin-right,
+本质都是调整border位置
+```

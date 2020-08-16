@@ -2,11 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
+
+	// "strconv"
+	// "time"
 
 	// "os"
 	"strings"
@@ -186,14 +190,16 @@ func (client *Client) getCourseList(payload string) ([]row, error) {
 	return totalCourses, nil
 }
 
-func (client *Client) courseChoose(choosePayload string) map[string]interface{} {
+func (client *Client) courseChoose(clazzId, selectedType, selectedCate string) (bool, string) {
 	// courseSelectionChooseBody := `{"clazzId":"1201412705275330561","selectedType":"1","selectedCate":"21","check":true}` //专选 ,classid是teachingclassid
 	// {"clazzId":"1208910925716574209","selectedType":"4","selectedCate":"21","check":true} //公选
 	// {"code":52021104,"message":"你已选择过该课程，不能再选！","data":null}
 	// {"code":200,"message":null,"data":"选课成功!"}
 	// {"code":52021107,"message":"不能超过公选课限选的最大门数！","data":null}
-	log.Println("Query params :", choosePayload)
-	chooseReq, _ := http.NewRequest("POST", urlLists.courseSelectionChooseUrl, strings.NewReader(choosePayload))
+	template := `{"clazzId":"%s","selectedType":"%s","selectedCate":"%s","check":true}`
+	payload := fmt.Sprintf(template, clazzId, selectedType, selectedCate)
+	log.Println("Query params :", payload)
+	chooseReq, _ := http.NewRequest("POST", urlLists.courseSelectionChooseUrl, strings.NewReader(payload))
 	chooseReq.Header.Add("Content-Type", "application/json;charset=UTF-8")
 	chooseReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
 	chooseReq.Header.Add("Referer", urlLists.baseUrl+"jwxt/mk/courseSelection/")
@@ -204,17 +210,28 @@ func (client *Client) courseChoose(choosePayload string) map[string]interface{} 
 	var data map[string]interface{}
 	err := json.Unmarshal(b, &data)
 	if err != nil {
-		return nil
+		return false, err.Error()
 	}
-	return data
+	if data == nil {
+		return false, "Json Parse Error"
+	} else {
+		if data["code"].(float64) != 200 {
+			return false, data["message"].(string)
+		} else {
+			return true, data["data"].(string)
+		}
+	}
 }
 
-func (client *Client) courseCancel(cancelPayload string) map[string]interface{} {
+func (client *Client) courseCancel(courseId, clazzId, selectedType string) (bool, string) {
 	// courseSelectionCancelBody := `{"courseId":"206169488","clazzId":"1201412705275330561","selectedType":"1"}`
 	// {"code":200,"message":null,"data":"退课成功！"}
 	// 多次退课都是退课成功
-	log.Println("Query params :", cancelPayload)
-	cancelReq, _ := http.NewRequest("POST", urlLists.courseSelectionCancelUrl, strings.NewReader(cancelPayload))
+	template := `{"courseId":"%s","clazzId":"%s","selectedType":"%s"}`
+	payload := fmt.Sprintf(template, courseId, clazzId, selectedType)
+
+	log.Println("Query params :", payload)
+	cancelReq, _ := http.NewRequest("POST", urlLists.courseSelectionCancelUrl, strings.NewReader(payload))
 	cancelReq.Header.Add("Content-Type", "application/json;charset=UTF-8")
 	cancelReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
 	cancelReq.Header.Add("Referer", urlLists.baseUrl+"jwxt/mk/courseSelection/")
@@ -225,24 +242,32 @@ func (client *Client) courseCancel(cancelPayload string) map[string]interface{} 
 	var data map[string]interface{}
 	err := json.Unmarshal(b, &data)
 	if err != nil {
-		return nil
+		return false, err.Error()
 	}
-	return data
-}
-
-func (client *Client) grabCourse(payload string, timeSeperate int) {
-	log.Println("开始抢课---|->")
-	for {
-		resp := client.courseChoose(payload)
-		if resp["code"].(float64) == 200 {
-			log.Println("抢课成功")
-			break
-		} else { // 52021104  52021107
-			log.Println("失败,睡眠" + fmt.Sprintf("%d", timeSeperate) + "s")
-			time.Sleep(time.Duration(timeSeperate) * time.Second)
+	if data == nil {
+		return false, "Json Parse Error"
+	} else {
+		if data["code"].(float64) != 200 {
+			return false, data["message"].(string)
+		} else {
+			return true, data["data"].(string)
 		}
 	}
 }
+
+// func (client *Client) grabCourse(payload string, timeSeperate int) {
+// 	log.Println("开始抢课---|->")
+// 	for {
+// 		resp := client.courseChoose(payload)
+// 		if resp["code"].(float64) == 200 {
+// 			log.Println("抢课成功")
+// 			break
+// 		} else { // 52021104  52021107
+// 			log.Println("失败,睡眠" + fmt.Sprintf("%d", timeSeperate) + "s")
+// 			time.Sleep(time.Duration(timeSeperate) * time.Second)
+// 		}
+// 	}
+// }
 
 // example: {"pageNo":1,"pageSize":10,"param":{"semesterYear":"2020-1","selectedType":"4","selectedCate":"11","hiddenConflictStatus":"0","hiddenSelectedStatus":"0","hiddenEmptyStatus":"0","vacancySortStatus":"0","collectionStatus":"0","studyCampusId":"5063559"}}
 // selectedType == 1 时, selectedCate才有效
@@ -262,4 +287,76 @@ func (client *Client) getCourseInfo(courseNum string) []byte {
 	defer resp.Body.Close()
 	b, _ := ioutil.ReadAll(resp.Body)
 	return b
+}
+
+func (client *Client) _courseAddCollection(classId, selectedType string) error {
+	template := `{"classesID":"%s","selectedType":"%s"}`
+	payload := fmt.Sprintf(template, classId, selectedType)
+	url := "https://jwxt.sysu.edu.cn/jwxt/choose-course-front-server/stuCollectedCourse/create"
+	req, _ := http.NewRequest("GET", url, strings.NewReader(payload))
+	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
+
+	resp, _ := client.Do(req)
+	defer resp.Body.Close()
+	b, _ := ioutil.ReadAll(resp.Body)
+	var data map[string]interface{}
+	err := json.Unmarshal(b, &data)
+	if err != nil {
+		return err
+	}
+	if data["code"].(float64) != 200 {
+		return errors.New("_courseAddCollection:Error:resp_code!=200")
+	}
+	return nil
+}
+
+func (client *Client) _courseDeleteCollection(classId, selectedType string) error {
+	err := client._courseAddCollection(classId, selectedType)
+	if err != nil {
+		errors.New(err.Error() + " in _courseDeleteCollection")
+	}
+	return nil
+}
+
+func (client *Client) getCollectedCourse(classId, selectedType, selectedCate string) (bool, string) {
+	template := `{"pageNo":1,"pageSize":10,"param":{"semesterYear":"2020-1","selectedType":"%s","selectedCate":"%s","hiddenConflictStatus":"0","hiddenSelectedStatus":"0","hiddenEmptyStatus":"0","vacancySortStatus":"0","collectionStatus":"1","studyCampusId":"5063559"}}`
+	payload := fmt.Sprintf(template, selectedType, selectedCate)
+	rows, err := client.getCourseList(payload)
+	if err != nil {
+		log.Println(err)
+		return false, err.Error()
+	}
+	for _, v := range rows {
+		if v.TeachingClassID == classId {
+			if fmt.Sprintf("%d", v.BaseReceiveNum) == v.CourseSelectedNum {
+				return false, "full"
+			} else {
+				ok, msg := client.courseChoose(classId, selectedType, selectedCate)
+				if ok {
+					return true, msg
+				} else {
+					return false, msg
+				}
+			}
+		}
+	}
+	return false, "Unknown Error in getOneCourse"
+}
+
+func (client *Client) getCollectedCourseWrapper(classId, selectedType, selectedCate string, time_ int) (bool, error) {
+	err := client._courseAddCollection(classId, selectedType)
+	if err != nil {
+		log.Println(err.Error())
+		return false, err
+	}
+	for {
+		ok, msg := client.getCollectedCourse(classId, selectedType, selectedCate)
+		log.Println("getCollectedCourseWrapper in loop:", msg)
+		if ok {
+			return true, nil
+		}
+		time.Sleep(10000)
+	}
+
 }
