@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	// "strconv"
+	"strconv"
 	// "time"
 
 	// "os"
@@ -344,19 +344,37 @@ func (client *Client) getCollectedCourse(classId, selectedType, selectedCate str
 	return false, "Unknown Error in getOneCourse"
 }
 
-func (client *Client) getCollectedCourseWrapper(classId, selectedType, selectedCate string, time_ int) (bool, error) {
+func (client *Client) getCollectedCourseWrapper(classId, selectedType, selectedCate, freq, dur string) (bool, error) {
+	freq_, _ := strconv.Atoi(freq)
+	dur_, _ := strconv.Atoi(dur)
+	total_cnt := dur_ / freq_
+	cnt := 0
 	err := client._courseAddCollection(classId, selectedType)
 	if err != nil {
 		log.Println(err.Error())
 		return false, err
 	}
+	isOk := true
 	for {
+		cnt++
+		if cnt >= total_cnt {
+			isOk = false
+			break
+		}
 		ok, msg := client.getCollectedCourse(classId, selectedType, selectedCate)
 		log.Println("getCollectedCourseWrapper in loop:", msg)
 		if ok {
 			return true, nil
 		}
-		time.Sleep(10000)
+		time.Sleep(time.Second * time.Duration(freq_))
 	}
-
+	err = client._courseDeleteCollection(classId, selectedType)
+	if err != nil {
+		log.Println(err.Error())
+		return false, err
+	}
+	if isOk == false {
+		return false, errors.New("TimeLimit: 定时任务到时,选课失败")
+	}
+	return true, nil
 }

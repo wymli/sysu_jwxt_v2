@@ -10,7 +10,7 @@
 
 <body>
   <div id="app" style="height: 100%;">
-    <el-dialog :visible.sync="dialog_visible" title="最后的设置">
+    <el-dialog :visible.sync="dialog_visible" title="定时任务单">
       <el-form ref="form" :model="form" label-width="80px">
         <el-form-item label="课程名称">
           <el-input v-model="form.name" disabled="true"></el-input>
@@ -18,49 +18,40 @@
         <el-form-item label="开课校园">
           <el-input v-model="form.region" disabled="true" width=10px></el-input>
         </el-form-item>
-        <el-divider></el-divider>
-        <el-form-item label="抢课时间">
-          <el-col :span="11">
-            <el-time-picker placeholder="Now" v-model="form.time1" style="width: 100%;" :disabled=true></el-time-picker>
-          </el-col>
-          <el-col class="line" :span="2" style="padding-left:4%"> -</el-col>
-          <el-col :span="11">
-            <el-time-select placeholder="结束时间" v-model="form.time2"
-              :picker-options="{start: '06:00',step: '00:15',end: '24:00',minTime: startTime}">
-          </el-col>
-        </el-form-item>
-        <el-form-item label="时间不定">
-          <el-tooltip class="item" effect="dark" content="无停止时间,直到显式停止抢课或电脑关机" placement="top">
-            <el-switch v-model="form.no_time_limit" style="padding-top:1.7%"></el-switch>
-          </el-tooltip>
-        </el-form-item>
-        <el-divider></el-divider>
-        <el-form-item label="抢课频率">
-          <el-select v-model="form.freq" placeholder="请选择抢课频率">
-            <el-option label="0.1s" value="msec_100"></el-option>
-            <el-option label="0.5s" value="msec_500"></el-option>
-            <el-option label="1s" value="sec_1"></el-option>
-            <el-option label="2s" value="sec_2"></el-option>
-            <el-option label="5s" value="sec_5"></el-option>
-            <el-option label="10s" value="sec_10"></el-option>
-            <el-option label="15s" value="sec_15"></el-option>
-            <el-option label="30s" value="sec_30"></el-option>
-            <el-option label="1min" value="min_1"></el-option>
-            <el-option label="5min" value="min_5"></el-option>
-            <el-option label="10min" value="min_10"></el-option>
+        <!-- <el-divider></el-divider> -->
+        <el-form-item label="任务持续时间">
+          <el-select v-model="form.dur" placeholder="请选择持续时间">
+            <el-option label="6s" value="0.1"></el-option>
+            <el-option label="1min" value="1"></el-option>
+            <el-option label="10min" value="10"></el-option>
+            <el-option label="30min" value="30"></el-option>
+            <el-option label="1h" value="60"></el-option>
+            <el-option label="2h" value="120"></el-option>
+            <el-option label="5h" value="300"></el-option>
+            <el-option label="10h" value="600"></el-option>
+            <el-option label="24h" value="1440"></el-option>
+            <el-option label="No Limit" value="999999"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="特殊资源">
-          <el-radio-group v-model="form.resource">
-            <el-radio label="线上品牌商赞助"></el-radio>
-            <el-radio label="线下场地免费"></el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="活动形式">
-          <el-input type="textarea" v-model="form.desc"></el-input>
+        <!-- <el-divider></el-divider> -->
+        <el-form-item label="抢课频率">
+          <el-select v-model="form.freq" placeholder="请选择抢课频率">
+            <el-option label="0s(代表无睡眠时间,急速抢课)" value="0"></el-option>
+            <el-option label="0.1s" value="0.1"></el-option>
+            <el-option label="0.5s" value="0.5"></el-option>
+            <el-option label="1s" value="1"></el-option>
+            <el-option label="2s" value="2"></el-option>
+            <el-option label="5s" value="5"></el-option>
+            <el-option label="10s" value="10"></el-option>
+            <el-option label="15s" value="15"></el-option>
+            <el-option label="30s" value="30"></el-option>
+            <el-option label="1min" value="60"></el-option>
+            <el-option label="5min" value="300"></el-option>
+            <el-option label="10min" value="600"></el-option>
+          </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="onSubmit">立即抢课</el-button>
+          <el-button type="primary" @click="beginTimeTask">开始任务</el-button>
           <el-button @click="dialog_visible = false">取消</el-button>
         </el-form-item>
       </el-form>
@@ -78,8 +69,8 @@
       </el-header>
       <el-main style="position: relative;">
         <template>
-          <el-tabs v-model="activeName" @tab-click="" tab-position="left"
-            style="width: 100%; height:90%; position: absolute; right: 0;margin-top: 20px; padding-bottom: 2px; ">
+          <el-tabs v-model="activeName" @tab-click="" tab-position="left" style="width: 100%; height:90%; 
+            position: absolute; right: 0;margin-top: 20px; padding-bottom: 2px; ">
             <el-tab-pane label="用户管理" name="first">User: {{ userName }} , {{ userId}} , {{ departmentName }} |
               专业:{{major}}</el-tab-pane>
             <el-tab-pane class="test" label="课程列表-专选" name="second"
@@ -159,7 +150,7 @@
               </template>
             </el-tab-pane>
             <el-tab-pane class="test" label="课程列表-公选" name="third"
-              style="height: 100%;overflow: auto ;padding-right: 1%">
+              style="height: 100%;overflow: auto ;padding-right: 3%;">
               <template>
                 <el-backtop target=".test" right="120">UP</el-backtop>
                 <el-table @cell-mouse-enter="handleHover"
@@ -229,13 +220,64 @@
                         :disabled="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? true:false"
                         @click="chooseCourse(scope.$index, scope.row , 'public')" v-else>选课
                       </el-button>
+                      <el-button size="small" :disabled="scope.row.collectionStatus == '1' ? true:false"
+                        @click="addTimeTask(scope.$index, scope.row , 'public')">加入定时任务</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
               </template>
             </el-tab-pane>
 
-            <el-tab-pane label="定时任务补偿" name="fourth">定时任务补偿</el-tab-pane>
+            <el-tab-pane label="定时任务" name="fourth" style="padding-right: 3%;">
+              <template>
+                <el-backtop target=".test" right="120">UP</el-backtop>
+                <el-table
+                  :data="tableDataTimeTask.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
+                  style="width: 100%">
+                  <el-table-column label="CourseNum" prop="courseNum">
+                  </el-table-column>
+                  <el-table-column label="CourseName" prop="courseName">
+                  </el-table-column>
+                  <el-table-column label="TeacherName">
+                    <template slot-scope="scope">
+                      {{scope.row.teachingTimePlace.split(',')[0]}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Credit" prop="credit">
+                  </el-table-column>
+                  <el-table-column label="CourseUnitName" prop="courseUnitName">
+                  </el-table-column>
+                  <el-table-column label="Capacity" prop="capacity">
+                    <template slot-scope="scope">
+                      <el-tag :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'danger':'success'">
+                        {{scope.row.courseSelectedNum}}/{{scope.row.baseReceiveNum}}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="任务状态" prop="timeTaskState">
+                  </el-table-column>
+                  <el-table-column label="运行时间" prop="timeElapsed">
+                  </el-table-column>
+                  <el-table-column label="剩余时间" prop="timeLeft">
+                  </el-table-column>
+                  <el-table-column align="right">
+                    <template slot="header" slot-scope="scope">
+                      <el-input v-model="searchTimeTask" size="mini" placeholder="输入关键字搜索" />
+                    </template>
+                    <template slot-scope="scope">
+                      <el-button size="small" type="success" v-if="scope.row.timeTaskState == '未开始'?true:false"
+                        @click="pullTaskForm(scope.$index, scope.row)">
+                        开始定时任务
+                      </el-button>
+                      <el-button size="small" type="danger" :disabled="scope.row.istaskFinished"
+                        @click="alert('Not Implemented')" v-else>
+                        {{scope.row.istaskFinished ? "定时任务完成":"结束定时任务"}}
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </template>
+
+            </el-tab-pane>
           </el-tabs>
         </template>
       </el-main>
@@ -271,8 +313,10 @@
 
         tableData1: [],
         tableData2: [],
+        tableDataTimeTask: [],
         search1: '',
         search2: '',
+        searchTimeTask: '',
       }
     },
     created() {
@@ -296,11 +340,6 @@
 
     },
     methods: {
-      handleEdit(index, row) {
-        this.form = this.dialogEmpty()
-        this.form = this.getCourseDetail(index, row)
-        this.dialog_visible = true
-      },
       handleHover(row, column, cell, event) {
         // this.$message(row.index) // this is ok
         if (row.isLoad == true) return
@@ -419,6 +458,64 @@
           }, 'UnInplement')
         });
       },
+      addTimeTask(index, row, type) {
+        // TODO :考虑去重
+        // FIXME: 此时,一个课程可以被多次加入定时任务队列
+        if (row.collectionStatus == "1") {
+          this.$notify.error({
+            title: "Warning",
+            message: "该课程已收藏,请先在jwxt.sysu.edu.cn取消收藏"
+          })
+          return
+        }
+        this.$set(row, "timeTaskState", "未开始")
+        this.$set(row, "timeElapsed", "0")
+        this.$set(row, "timeLeft", "0")
+        this.$set(row, "istaskFinished", false)
+        this.tableDataTimeTask.push(row)
+      },
+      pullTaskForm(index, row) {
+        this.form = this.dialogEmpty()
+        this.form = this.getCourseDetail(index, row)
+        this.form.row = row
+        this.dialog_visible = true
+      },
+      beginTimeTask() {
+        row = this.form.row
+        this.createTypeAndCate(row)
+        console.log(row)
+        // 选课间隔秒数
+        freq = Number(this.form.freq)
+        // 定时任务时长秒数
+        dur = Number(this.form.dur) * 60
+        url = "/course/timeTask/create?clazzId=" + row.teachingClassId + "&selectedType=" + row
+          .selectedType +
+          "&selectedCate="
+        row.selectedCate + "&freq=" + freq + "&dur=" + dur
+        this.$http.get(url)
+        this.form.row.timeTaskState = "进行中"
+        this.dialog_visible = false
+        cnt = 0
+
+        // 多个计时器要合并在一个计时器里面,遍历列表
+        repeat = function () {
+          timer_tmp = setTimeout(function () {
+            cnt += freq
+            row.timeLeft = dur - cnt
+            row.timeElapsed = cnt
+            if (row.timeLeft < 0) {
+              row.timeTaskState = "已结束"
+              row.istaskFinished = true
+            } else {
+              clearTimeout(timer_tmp)
+              repeat()
+            }
+          }, freq * 1000)
+        }
+        repeat()
+
+      },
+
       // IsHaveClass(index, row) {
       //   // selectedStatus 1:选课 4:退课 0:无空位 2:失败
       //   if (row.selectedStatus == "1") {

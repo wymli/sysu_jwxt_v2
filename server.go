@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	// "strconv"
 
 	// "net/http"
 
@@ -210,6 +211,26 @@ func courseCancelHandler(ctx *gin.Context) {
 	}
 }
 
+func timeTaskCreateHandler(ctx *gin.Context) {
+	return
+	clazzId := ctx.Query("clazzId")
+	selectedType := ctx.Query("selectedType")
+	selectedCate := ctx.Query("selectedCate")
+	freq := ctx.Query("freq")
+	dur := ctx.Query("dur")
+	ok, err := client.getCollectedCourseWrapper(clazzId, selectedType, selectedCate, freq, dur)
+	if ok {
+		ctx.JSON(200, gin.H{"state": "success", "msg": "ok"})
+	} else {
+		ctx.JSON(200, gin.H{"state": "fail", "msg": err.Error()})
+	}
+	return
+}
+
+func timeTaskDeleteHandler(ctx *gin.Context) {
+	return
+}
+
 func main() {
 	if client == nil {
 		log.Fatal("client == nil")
@@ -229,6 +250,8 @@ func main() {
 	rt.GET("/teacherInfo/all", teacherInfo_all)
 	rt.GET("/course/choose", courseChooseHandler)
 	rt.GET("/course/cancel", courseCancelHandler)
+	rt.GET("/course/timeTask/create", timeTaskCreateHandler)
+	rt.GET("/course/timeTask/delete", timeTaskDeleteHandler)
 	// rt.GET("/captcha", captcha)
 	// rt.POST("/login", loginHandler)
 	// rt.GET("/index", indexHandler)
