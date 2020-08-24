@@ -319,62 +319,120 @@ func (client *Client) _courseDeleteCollection(classId, selectedType string) erro
 	return nil
 }
 
-func (client *Client) getCollectedCourse(classId, selectedType, selectedCate string) (bool, string) {
+func (client *Client) getCollectedCourseList(classId, selectedType, selectedCate string) ([]row, error) {
 	template := `{"pageNo":1,"pageSize":10,"param":{"semesterYear":"2020-1","selectedType":"%s","selectedCate":"%s","hiddenConflictStatus":"0","hiddenSelectedStatus":"0","hiddenEmptyStatus":"0","vacancySortStatus":"0","collectionStatus":"1","studyCampusId":"5063559"}}`
 	payload := fmt.Sprintf(template, selectedType, selectedCate)
 	rows, err := client.getCourseList(payload)
 	if err != nil {
 		log.Println(err)
-		return false, err.Error()
+		return nil, err
 	}
-	for _, v := range rows {
-		if v.TeachingClassID == classId {
-			if fmt.Sprintf("%d", v.BaseReceiveNum) == v.CourseSelectedNum {
-				return false, "full"
-			} else {
-				ok, msg := client.courseChoose(classId, selectedType, selectedCate)
-				if ok {
-					return true, msg
-				} else {
-					return false, msg
-				}
-			}
-		}
-	}
-	return false, "Unknown Error in getOneCourse"
+	return rows, nil
 }
 
-func (client *Client) getCollectedCourseWrapper(classId, selectedType, selectedCate, freq, dur string) (bool, error) {
+// getOneCourseInLoop
+func (client *Client) createTimeTask(classId, selectedType, selectedCate, freq, dur string) (bool, error) {
 	freq_, _ := strconv.Atoi(freq)
 	dur_, _ := strconv.Atoi(dur)
 	total_cnt := dur_ / freq_
 	cnt := 0
-	err := client._courseAddCollection(classId, selectedType)
+	isCollected, err := client.isCourseCollected(classId, selectedType, selectedCate)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(err)
 		return false, err
 	}
-	isOk := true
+	if !isCollected {
+		err = client._courseAddCollection(classId, selectedType)
+		if err != nil {
+			log.Println(err.Error())
+			return false, err
+		}
+	}
+
+	timeOver := false
+
+	// init thread state
+	threadState[classId] = THREAD_RUN
+	timeTaskState[classId] = TIME_TASK_FAIL
+
 	for {
-		cnt++
-		if cnt >= total_cnt {
-			isOk = false
+		// check if cancel ; 无需加锁,此线程只读,最多多一次循环
+		if threadState[classId] == THREAD_STOP {
 			break
 		}
-		ok, msg := client.getCollectedCourse(classId, selectedType, selectedCate)
-		log.Println("getCollectedCourseWrapper in loop:", msg)
-		if ok {
-			return true, nil
+
+		cnt++
+		if cnt >= total_cnt {
+			timeOver = true
+			break
+		}
+		isAvailable, err := client.isCourseAvailable(classId, selectedType, selectedCate)
+		if err != nil {
+			log.Println("createTimeTask: getOneCourse in loop:", err.Error())
+			return false, err
+		}
+		if isAvailable {
+			isOk, msg := client.courseChoose(classId, selectedType, selectedCate)
+			if isOk {
+				timeTaskState[classId] = TIME_TASK_SUCCESS
+				return true, nil
+			} else {
+				log.Println("TimeTask: classId:", classId, "查询到空位,选课失败:", msg)
+			}
 		}
 		time.Sleep(time.Second * time.Duration(freq_))
 	}
+	threadState[classId] = THREAD_STOP
+
 	err = client._courseDeleteCollection(classId, selectedType)
 	if err != nil {
 		log.Println(err.Error())
 		return false, err
 	}
-	if isOk == false {
+	if isCollected, _ = client.isCourseCollected(classId, selectedType, selectedCate); isCollected {
+		log.Println("courseDeleteCollection : err")
+	}
+	if timeOver {
 		return false, errors.New("TimeLimit: 定时任务到时,选课失败")
 	}
+	if threadState[classId] == THREAD_STOP {
+		return false, errors.New("DeleteTimeTask: cancelled initiativly")
+	}
 	return true, nil
+}
+
+func (client *Client) deleteTimeTask(classId string) (bool, error) {
+	threadState[classId] = THREAD_STOP
+	return true, nil
+}
+
+func (client *Client) reportTimeTask(classId string) map[string]interface{} {
+	return map[string]interface{}{
+		"isThreadRun":       threadState[classId] == THREAD_RUN,
+		"isTimeTaskSuccess": timeTaskState[classId] == TIME_TASK_SUCCESS,
+	}
+}
+
+func (client *Client) isCourseCollected(classId, selectedType, selectedCate string) (bool, error) {
+	row, err := client.getCollectedCourseList(classId, selectedType, selectedCate)
+	for _, v := range row {
+		if v.TeachingClassID == classId {
+			return true, err
+		}
+	}
+	return false, err
+}
+
+func (client *Client) isCourseAvailable(classId, selectedType, selectedCate string) (bool, error) {
+	row, err := client.getCollectedCourseList(classId, selectedType, selectedCate)
+	for _, v := range row {
+		if v.TeachingClassID == classId {
+			if fmt.Sprintf("%s", v.BaseReceiveNum) == v.CourseSelectedNum {
+				return false, err
+			} else {
+				return true, err
+			}
+		}
+	}
+	return false, err
 }

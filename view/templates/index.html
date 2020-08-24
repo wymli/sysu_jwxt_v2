@@ -13,10 +13,10 @@
     <el-dialog :visible.sync="dialog_visible" title="定时任务单">
       <el-form ref="form" :model="form" label-width="80px">
         <el-form-item label="课程名称">
-          <el-input v-model="form.name" disabled="true"></el-input>
+          <el-input v-model="form.name" :disabled="true"></el-input>
         </el-form-item>
         <el-form-item label="开课校园">
-          <el-input v-model="form.region" disabled="true" width=10px></el-input>
+          <el-input v-model="form.region" :disabled="true" width=10px></el-input>
         </el-form-item>
         <!-- <el-divider></el-divider> -->
         <el-form-item label="任务持续时间">
@@ -259,6 +259,11 @@
                   </el-table-column>
                   <el-table-column label="剩余时间" prop="timeLeft">
                   </el-table-column>
+                  <el-table-column label="日志" prop="log" width="150px">
+                    <template slot-scope="scope">
+                      <p v-for="it in scope.row.log.split(';')">{{it}}</p>
+                    </template>
+                  </el-table-column>
                   <el-table-column align="right">
                     <template slot="header" slot-scope="scope">
                       <el-input v-model="searchTimeTask" size="mini" placeholder="输入关键字搜索" />
@@ -269,7 +274,7 @@
                         开始定时任务
                       </el-button>
                       <el-button size="small" type="danger" :disabled="scope.row.istaskFinished"
-                        @click="alert('Not Implemented')" v-else>
+                        @click="deleteTimeTask(scope.$index, scope.row)" v-else>
                         {{scope.row.istaskFinished ? "定时任务完成":"结束定时任务"}}
                       </el-button>
                     </template>
@@ -313,7 +318,42 @@
 
         tableData1: [],
         tableData2: [],
-        tableDataTimeTask: [],
+        tableDataTimeTask: [{
+          "mainClassesID": "1201395320145297408",
+          "teachingClassId": "1201396087224778753",
+          "teachingClassNum": "201920816",
+          "teachingClassName": null,
+          "courseNum": "DCS222",
+          "courseName": "测试用例",
+          "credit": 3.0,
+          "examFormName": "考试",
+          "timeTaskState": "未开始",
+          "courseUnitNum": "67000",
+          "courseUnitName": "123",
+          "teachingTeacherNum": "",
+          "teachingTeacherName": "",
+          "baseReceiveNum": 60,
+          "addReceiveNum": 0,
+          "teachingTimePlace": "432",
+          "studyCampusId": "5063559",
+          "week": "",
+          "classTimes": "",
+          "courseSelectedNum": "60",
+          "filterSelectedNum": "0",
+          "selectedStatus": "1",
+          "collectionStatus": "0",
+          "teachingLanguageCode": "01",
+          "pubCourseTypeCode": null,
+          "courseCateCode": "21",
+          "specialClassCode": null,
+          "sportItemId": null,
+          "recordMode": "01",
+          "clazzNum": "201920816",
+          "log": "null",
+          "examFormCode": "1",
+          "courseId": "206169477",
+          "scheduleExamTime": "结课考试,考试,2020-06-22第5-7节;"
+        }, ],
         search1: '',
         search2: '',
         searchTimeTask: '',
@@ -461,17 +501,11 @@
       addTimeTask(index, row, type) {
         // TODO :考虑去重
         // FIXME: 此时,一个课程可以被多次加入定时任务队列
-        if (row.collectionStatus == "1") {
-          this.$notify.error({
-            title: "Warning",
-            message: "该课程已收藏,请先在jwxt.sysu.edu.cn取消收藏"
-          })
-          return
-        }
         this.$set(row, "timeTaskState", "未开始")
         this.$set(row, "timeElapsed", "0")
         this.$set(row, "timeLeft", "0")
         this.$set(row, "istaskFinished", false)
+        this.$set(row, "log", "null")
         this.tableDataTimeTask.push(row)
       },
       pullTaskForm(index, row) {
@@ -483,39 +517,35 @@
       beginTimeTask() {
         row = this.form.row
         this.createTypeAndCate(row)
-        console.log(row)
         // 选课间隔秒数
         freq = Number(this.form.freq)
         // 定时任务时长秒数
         dur = Number(this.form.dur) * 60
         url = "/course/timeTask/create?clazzId=" + row.teachingClassId + "&selectedType=" + row
-          .selectedType +
-          "&selectedCate="
-        row.selectedCate + "&freq=" + freq + "&dur=" + dur
+          .selectedType + "&selectedCate=" + row.selectedCate + "&freq=" + freq + "&dur=" + dur
         this.$http.get(url)
         this.form.row.timeTaskState = "进行中"
         this.dialog_visible = false
-        cnt = 0
 
-        // 多个计时器要合并在一个计时器里面,遍历列表
-        repeat = function () {
-          timer_tmp = setTimeout(function () {
-            cnt += freq
-            row.timeLeft = dur - cnt
-            row.timeElapsed = cnt
-            if (row.timeLeft < 0) {
-              row.timeTaskState = "已结束"
-              row.istaskFinished = true
-            } else {
-              clearTimeout(timer_tmp)
-              repeat()
-            }
-          }, freq * 1000)
-        }
-        repeat()
-
+        setInterval(this.reportTimeTask, 1000, row)
       },
-
+      reportTimeTask(row) {
+        // this.$message(row.teachingClassId)
+        url = "/course/timeTask/report?clazzId=" + row.teachingClassId
+        this.$http.get(url).then(function (resp) {
+          if (resp.body.state == "success") {
+            isRun = resp.body.msg.isThreadRun
+            isSuccess = resp.body.msg.isTimeTaskSuccess
+            var myDate = new Date()
+            row.log = "isRun:" + isRun + ";isSuccess:" + isSuccess + ";更新时间:;" + myDate.getHours() + ":" +
+              myDate.getMinutes() + ":" + myDate.getSeconds()
+            if (isSuccess) {
+              row.istaskFinished = true
+              row.timeTaskState = "已结束"
+            }
+          }
+        })
+      },
       // IsHaveClass(index, row) {
       //   // selectedStatus 1:选课 4:退课 0:无空位 2:失败
       //   if (row.selectedStatus == "1") {
@@ -524,6 +554,17 @@
       //     return false
       //   }
       // },
+      deleteTimeTask(index, row) {
+        url = "/course/timeTask/report?clazzId=" + row.teachingClassId
+        this.$http.get(url).then(function (resp) {
+          if (resp.body.state == "success") {
+            row.istaskFinished = true
+            row.timeTaskState = "已结束"
+          } else {
+            console.log(resp.body.msg)
+          }
+        })
+      },
       createTypeAndCate(row) {
         row.selectedCate = row.courseCateCode
         switch (row.courseCateCode) {

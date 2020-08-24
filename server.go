@@ -218,7 +218,7 @@ func timeTaskCreateHandler(ctx *gin.Context) {
 	selectedCate := ctx.Query("selectedCate")
 	freq := ctx.Query("freq")
 	dur := ctx.Query("dur")
-	ok, err := client.getCollectedCourseWrapper(clazzId, selectedType, selectedCate, freq, dur)
+	ok, err := client.createTimeTask(clazzId, selectedType, selectedCate, freq, dur)
 	if ok {
 		ctx.JSON(200, gin.H{"state": "success", "msg": "ok"})
 	} else {
@@ -229,6 +229,20 @@ func timeTaskCreateHandler(ctx *gin.Context) {
 
 func timeTaskDeleteHandler(ctx *gin.Context) {
 	return
+	clazzId := ctx.Query("clazzId")
+	ok, err := client.deleteTimeTask(clazzId)
+	if ok {
+		ctx.JSON(200, gin.H{"state": "success", "msg": "ok"})
+	} else {
+		ctx.JSON(200, gin.H{"state": "fail", "msg": err.Error()})
+	}
+	return
+}
+
+func timeTaskReportHandler(ctx *gin.Context) {
+	clazzId := ctx.Query("clazzId")
+	msg := client.reportTimeTask(clazzId)
+	ctx.JSON(200, gin.H{"state": "success", "msg": msg})
 }
 
 func main() {
@@ -252,6 +266,7 @@ func main() {
 	rt.GET("/course/cancel", courseCancelHandler)
 	rt.GET("/course/timeTask/create", timeTaskCreateHandler)
 	rt.GET("/course/timeTask/delete", timeTaskDeleteHandler)
+	rt.GET("/course/timeTask/report", timeTaskReportHandler)
 	// rt.GET("/captcha", captcha)
 	// rt.POST("/login", loginHandler)
 	// rt.GET("/index", indexHandler)

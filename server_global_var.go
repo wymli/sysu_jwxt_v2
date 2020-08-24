@@ -20,11 +20,28 @@ const (
 	NORMAL = 2
 )
 
+var (
+	// global dict
+	threadState   map[string]int
+	timeTaskState map[string]int
+)
+
+// 注意不要用零值,因为map如果空键,将返回对应类型的零值
+const (
+	THREAD_STOP       = 1
+	THREAD_RUN        = 2
+	TIME_TASK_SUCCESS = 1
+	TIME_TASK_FAIL    = 2
+)
+
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 	log.SetPrefix("[@STrelitziA@]")
 	urlLists.init(NORMAL)
 	client = getDefaultClient()
+
+	threadState = make(map[string]int)
+	timeTaskState = make(map[string]int)
 
 	_campus_id = map[string]string{
 		"东校园":  "5063559",
