@@ -73,161 +73,87 @@
             position: absolute; right: 0;margin-top: 20px; padding-bottom: 2px; ">
             <el-tab-pane label="用户管理" name="first">User: {{ userName }} , {{ userId}} , {{ departmentName }} |
               专业:{{major}}</el-tab-pane>
-            <el-tab-pane class="test" label="课程列表-专选" name="second"
-              style="height: 100%;overflow: auto ;padding-right: 1%">
-              <template>
-                <el-backtop target=".test" right="120">UP</el-backtop>
-                <el-table @cell-mouse-enter="handleHover"
-                  :data="tableData1.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
-                  style="width: 100%">
-                  <el-table-column label="CourseNum" prop="courseNum">
-                  </el-table-column>
-                  <el-table-column label="CourseName" prop="courseName">
-                  </el-table-column>
-                  <el-table-column label="TeacherName">
-                    <template slot-scope="scope">
-                      <el-popover trigger="hover" placement="top">
-                        <p>课程负责人: {{scope.row.bossName}} </p>
-                        <p>Email:{{scope.row.email}}</p>
-                        <p>Age: {{scope.row.age}} </p>
-                        <p>bestDegreeName: {{scope.row.bestDegreeName}} </p>
-                        <div slot="reference" class="name-wrapper">
-                          <el-tag>
-                            {{scope.row.teachingTimePlace.split(";")[0]}}</el-tag>
-                        </div>
-                      </el-popover>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="Time" width="300px">
-                    <template slot-scope="scope">
-                      <el-popover trigger="hover" placement="top">
-                        <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 15px;">{{it}}</p>
-                        <div slot="reference" class="name-wrapper">
-                          <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 1px;">
-                            {{it}}</p>
-                        </div>
-                      </el-popover>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="Credit" prop="credit">
-                  </el-table-column>
-                  <el-table-column label="CourseUnitName" prop="courseUnitName">
-                  </el-table-column>
-                  <!-- <el-table-column label="ExamFormName" prop="examFormName">
-                  </el-table-column> -->
-                  <el-table-column label="ScheduleExamTime" prop="scheduleExamTime">
-                  </el-table-column>
-                  <el-table-column label="Capacity" prop="capacity">
-                    <template slot-scope="scope">
-                      <el-tag :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'danger':'success'">
-                        {{scope.row.courseSelectedNum}}/{{scope.row.baseReceiveNum}}</el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="img">
-                    <template slot-scope="scope">
-                      <el-image size="mini" :src="scope.row.imgSrc" style="width: 50px; height: 60px;cursor:pointer"
-                        @click="showBigImg(scope.$index, scope.row)">
-                      </el-image>
-                    </template>
-                  </el-table-column>
-                  <el-table-column align="right">
-                    <template slot="header" slot-scope="scope">
-                      <el-input v-model="search1" size="mini" placeholder="输入关键字搜索" />
-                    </template>
-                    <template slot-scope="scope">
-                      <el-button size="small" type="danger" :loading="scope.row.isButtonLoading"
-                        v-if="scope.row.selectedStatus == '4' " @click="cancelCourse(scope.$index, scope.row,'major')">
-                        退课
-                      </el-button>
-                      <el-button size="small" :loading="scope.row.isButtonLoading"
-                        :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'info' : 'success'"
-                        :disabled="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? true:false"
-                        @click="chooseCourse(scope.$index, scope.row , 'public')" v-else>选课
-                      </el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </template>
-            </el-tab-pane>
-            <el-tab-pane class="test" label="课程列表-公选" name="third"
-              style="height: 100%;overflow: auto ;padding-right: 3%;">
-              <template>
-                <el-backtop target=".test" right="120">UP</el-backtop>
-                <el-table @cell-mouse-enter="handleHover"
-                  :data="tableData2.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
-                  style="width: 100%">
-                  <el-table-column label="CourseNum" prop="courseNum">
-                  </el-table-column>
-                  <el-table-column label="CourseName" prop="courseName">
-                  </el-table-column>
-                  <el-table-column label="TeacherName">
-                    <template slot-scope="scope">
-                      <el-popover trigger="hover" placement="top">
-                        <p>课程负责人: {{scope.row.bossName}} </p>
-                        <p>Email:{{scope.row.email}}</p>
-                        <p>Age: {{scope.row.age}} </p>
-                        <p>bestDegreeName: {{scope.row.bestDegreeName}} </p>
-                        <div slot="reference" class="name-wrapper">
-                          <el-tag>
-                            {{scope.row.teachingTimePlace.split(";")[0]}}</el-tag>
-                        </div>
-                      </el-popover>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="Time" width="300px">
-                    <template slot-scope="scope">
-                      <el-popover trigger="hover" placement="top">
-                        <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 15px;">{{it}}</p>
-                        <div slot="reference" class="name-wrapper">
-                          <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 1px;">
-                            {{it}}</p>
-                        </div>
-                      </el-popover>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="Credit" prop="credit">
-                  </el-table-column>
-                  <el-table-column label="CourseUnitName" prop="courseUnitName">
-                  </el-table-column>
-                  <!-- <el-table-column label="ExamFormName" prop="examFormName">
-                  </el-table-column> -->
-                  <el-table-column label="ScheduleExamTime" prop="scheduleExamTime">
-                  </el-table-column>
-                  <el-table-column label="Capacity" prop="capacity">
-                    <template slot-scope="scope">
-                      <el-tag :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'danger':'success'">
-                        {{scope.row.courseSelectedNum}}/{{scope.row.baseReceiveNum}}</el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="img">
-                    <template slot-scope="scope">
-                      <el-image size="mini" :src="scope.row.imgSrc" style="width: 50px; height: 60px;cursor:pointer"
-                        @click="showBigImg(scope.$index, scope.row)">
-                      </el-image>
-                    </template>
-                  </el-table-column>
-                  <el-table-column align="right">
-                    <template slot="header" slot-scope="scope">
-                      <el-input v-model="search2" size="mini" placeholder="输入关键字搜索" />
-                    </template>
-                    <template slot-scope="scope">
-                      <el-button size="small" type="danger" :loading="scope.row.isButtonLoading"
-                        v-if="scope.row.selectedStatus == '4' " @click="cancelCourse(scope.$index, scope.row,'public')">
-                        退课
-                      </el-button>
-                      <el-button size="small" :loading="scope.row.isButtonLoading"
-                        :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'info' : 'success'"
-                        :disabled="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? true:false"
-                        @click="chooseCourse(scope.$index, scope.row , 'public')" v-else>选课
-                      </el-button>
-                      <el-button size="small" :disabled="scope.row.collectionStatus == '1' ? true:false"
-                        @click="addTimeTask(scope.$index, scope.row , 'public')">加入定时任务</el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </template>
-            </el-tab-pane>
-
+            <template v-for="it in tableData">
+              <el-tab-pane class="test" :label="it.label" :name="it.name"
+                style="height: 100%;overflow: auto ;padding-right: 3%;">
+                <template>
+                  <el-backtop target=".test" :right="120">UP</el-backtop>
+                  <el-table @cell-mouse-enter="handleHover" v-loading="it.loading"
+                    :data="it.data.filter(data => !it.search || data.courseName.toLowerCase().includes(it.search.toLowerCase()))"
+                    style="width: 100%">
+                    <el-table-column label="CourseNum" prop="courseNum">
+                    </el-table-column>
+                    <el-table-column label="CourseName" prop="courseName">
+                    </el-table-column>
+                    <el-table-column label="TeacherName">
+                      <template slot-scope="scope">
+                        <el-popover trigger="hover" placement="top">
+                          <p>课程负责人: {{scope.row.bossName}} </p>
+                          <p>Email:{{scope.row.email}}</p>
+                          <p>Age: {{scope.row.age}} </p>
+                          <p>bestDegreeName: {{scope.row.bestDegreeName}} </p>
+                          <div slot="reference" class="name-wrapper">
+                            <el-tag>
+                              {{scope.row.teachingTimePlace.split(";")[0]}}</el-tag>
+                          </div>
+                        </el-popover>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="Time" width="300px">
+                      <template slot-scope="scope">
+                        <el-popover trigger="hover" placement="top">
+                          <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 15px;">{{it}}</p>
+                          <div slot="reference" class="name-wrapper">
+                            <p v-for="it in scope.row.teachingTimePlace.split(',')" style="font-size: 1px;">
+                              {{it}}</p>
+                          </div>
+                        </el-popover>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="Credit" prop="credit">
+                    </el-table-column>
+                    <el-table-column label="CourseUnitName" prop="courseUnitName">
+                    </el-table-column>
+                    <!-- <el-table-column label="ExamFormName" prop="examFormName">
+                    </el-table-column> -->
+                    <el-table-column label="ScheduleExamTime" prop="scheduleExamTime">
+                    </el-table-column>
+                    <el-table-column label="Capacity" prop="capacity">
+                      <template slot-scope="scope">
+                        <el-tag :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'danger':'success'">
+                          {{scope.row.courseSelectedNum}}/{{scope.row.baseReceiveNum}}</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="img">
+                      <template slot-scope="scope">
+                        <el-image size="mini" :src="typeof(scope.row.imgSrc)=='undefined' ? '' :scope.row.imgSrc "
+                          style="width: 50px; height: 60px;cursor:pointer" @click="showBigImg(scope.$index, scope.row)">
+                        </el-image>
+                      </template>
+                    </el-table-column>
+                    <el-table-column align="right">
+                      <template slot="header" slot-scope="scope">
+                        <el-input v-model="it.search" size="mini" placeholder="输入关键字搜索" />
+                      </template>
+                      <template slot-scope="scope">
+                        <el-button size="small" type="danger" :loading="scope.row.isButtonLoading"
+                          v-if="scope.row.selectedStatus == '4' "
+                          @click="cancelCourse(scope.$index, scope.row,'public')">
+                          退课
+                        </el-button>
+                        <el-button size="small" :loading="scope.row.isButtonLoading"
+                          :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'info' : 'success'"
+                          :disabled="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? true:false"
+                          @click="chooseCourse(scope.$index, scope.row , 'public')" v-else>选课
+                        </el-button>
+                        <el-button size="small" :disabled="scope.row.collectionStatus == '1' ? true:false"
+                          @click="addTimeTask(scope.$index, scope.row , 'public')">加入定时任务</el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </template>
+              </el-tab-pane>
+            </template>
             <el-tab-pane label="定时任务" name="fourth" style="padding-right: 3%;">
               <template>
                 <el-backtop target=".test" right="120">UP</el-backtop>
@@ -269,13 +195,13 @@
                       <el-input v-model="searchTimeTask" size="mini" placeholder="输入关键字搜索" />
                     </template>
                     <template slot-scope="scope">
-                      <el-button size="small" type="success" v-if="scope.row.timeTaskState == '未开始'?true:false"
+                      <el-button size="small" type="success" v-if="scope.row.timeTaskState == '未开始'"
                         @click="pullTaskForm(scope.$index, scope.row)">
                         开始定时任务
                       </el-button>
-                      <el-button size="small" type="danger" :disabled="scope.row.istaskFinished"
+                      <el-button size="small" type="danger" :disabled="scope.row.timeTaskState == '已结束'"
                         @click="deleteTimeTask(scope.$index, scope.row)" v-else>
-                        {{scope.row.istaskFinished ? "定时任务完成":"结束定时任务"}}
+                        {{scope.row.timeTaskState == '已结束' ? "定时任务完成":"结束定时任务"}}
                       </el-button>
                     </template>
                   </el-table-column>
@@ -293,6 +219,10 @@
 </html>
 
 <script>
+  mapName2Idx = {
+    "major": 0,
+    "public": 1
+  }
   new Vue({
     el: "#app",
     data: function () {
@@ -300,7 +230,7 @@
         userName: "Not Login",
         userId: "Not Login",
         departmentName: "Not Login",
-        token: "Not Login",
+        major: "Not Login",
         activeName: 'first',
         dialog_visible: false,
         bigImgVisible: false,
@@ -315,48 +245,22 @@
           resource: '',
           desc: ''
         },
+        tableData: [{
+            label: "课程列表:专选",
+            name: "major",
+            loading: true,
+            search: '',
+            data: []
+          },
+          {
+            label: "课程列表:公选",
+            name: "public",
+            loading: true,
+            search: '',
+            data: []
+          }
+        ],
 
-        tableData1: [],
-        tableData2: [],
-        tableDataTimeTask: [{
-          "mainClassesID": "1201395320145297408",
-          "teachingClassId": "1201396087224778753",
-          "teachingClassNum": "201920816",
-          "teachingClassName": null,
-          "courseNum": "DCS222",
-          "courseName": "测试用例",
-          "credit": 3.0,
-          "examFormName": "考试",
-          "timeTaskState": "未开始",
-          "courseUnitNum": "67000",
-          "courseUnitName": "123",
-          "teachingTeacherNum": "",
-          "teachingTeacherName": "",
-          "baseReceiveNum": 60,
-          "addReceiveNum": 0,
-          "teachingTimePlace": "432",
-          "studyCampusId": "5063559",
-          "week": "",
-          "classTimes": "",
-          "courseSelectedNum": "60",
-          "filterSelectedNum": "0",
-          "selectedStatus": "1",
-          "collectionStatus": "0",
-          "teachingLanguageCode": "01",
-          "pubCourseTypeCode": null,
-          "courseCateCode": "21",
-          "specialClassCode": null,
-          "sportItemId": null,
-          "recordMode": "01",
-          "clazzNum": "201920816",
-          "log": "null",
-          "examFormCode": "1",
-          "courseId": "206169477",
-          "scheduleExamTime": "结课考试,考试,2020-06-22第5-7节;"
-        }, ],
-        search1: '',
-        search2: '',
-        searchTimeTask: '',
       }
     },
     created() {
@@ -364,11 +268,7 @@
     },
     watch: {
       'activeName': function (val) {
-        if (val == "second") {
-          this.getAndSetCourse("major")
-        } else if (val == "third") {
-          this.getAndSetCourse("public")
-        }
+        this.getAndSetCourse(val)
       },
     },
     mounted() {
@@ -383,7 +283,7 @@
       handleHover(row, column, cell, event) {
         // this.$message(row.index) // this is ok
         if (row.isLoad == true) return
-        this.getTeacherInfo(row)
+        else this.getTeacherInfo(row)
       },
       // getTeacherImg(index, row) {
       //   return "/teacherInfo/img?courseNum=" + row.courseNum
@@ -504,7 +404,7 @@
         this.$set(row, "timeTaskState", "未开始")
         this.$set(row, "timeElapsed", "0")
         this.$set(row, "timeLeft", "0")
-        this.$set(row, "istaskFinished", false)
+        // this.$set(row, "istaskFinished", false)
         this.$set(row, "log", "null")
         this.tableDataTimeTask.push(row)
       },
@@ -540,7 +440,7 @@
             row.log = "isRun:" + isRun + ";isSuccess:" + isSuccess + ";更新时间:;" + myDate.getHours() + ":" +
               myDate.getMinutes() + ":" + myDate.getSeconds()
             if (isSuccess) {
-              row.istaskFinished = true
+              // row.istaskFinished = true
               row.timeTaskState = "已结束"
             }
           }
@@ -558,7 +458,7 @@
         url = "/course/timeTask/report?clazzId=" + row.teachingClassId
         this.$http.get(url).then(function (resp) {
           if (resp.body.state == "success") {
-            row.istaskFinished = true
+            // row.istaskFinished = true
             row.timeTaskState = "已结束"
           } else {
             console.log(resp.body.msg)
@@ -654,14 +554,16 @@
         })
       },
       getAndSetCourse(t) {
+        console.log("in getandsetcourse", t)
         this.$http.get("/courseList?type=" + t).then(function (resp) {
           console.log(resp)
           if (resp.body.state == "success") {
-
-            if (t == "public")
-              this.tableData2 = resp.body.data
-            else
-              this.tableData1 = resp.body.data
+            idx = mapName2Idx[t]
+            this.tableData[idx].data = resp.body.data
+            this.tableData[idx].loading = false
+            if (resp.body.data == []) {
+              this.$message("空课程列表:未到选课时间或未交学费")
+            }
           } else {
             this.$notify({
               title: "Error",
