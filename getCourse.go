@@ -150,8 +150,8 @@ func (client *Client) getCourseList(payload string) ([]row, error) {
 	// timestamp := time.Now().Unix()
 	// var courseListUrl_t =  courseListUrl + "?_t=" + fmt.Sprintf("%d", timestamp)
 
-	log.Println("courseListUrl : ", urlLists.courseListUrl)
-	log.Println("Query params :", payload)
+	// log.Println("courseListUrl : ", urlLists.courseListUrl)
+	// log.Println("Query params :", payload)
 	courseListReq, _ := http.NewRequest("POST", urlLists.courseListUrl, strings.NewReader(payload))
 	courseListReq.Header.Add("Content-Type", "application/json;charset=UTF-8")
 	courseListReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
@@ -165,7 +165,12 @@ func (client *Client) getCourseList(payload string) ([]row, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if courseList.Code != 200 {
+		log.Println("error code:", courseList.Code, " msg:", courseList.Message)
+	}
+	if courseList.Code == 52021136 {
+		log.Println("黑名单")
+	}
 	totalCourses := courseList.Data.Rows
 	//寻找有空位的课
 	n_courses := courseList.Data.Total
