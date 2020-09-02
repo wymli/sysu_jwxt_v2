@@ -7,8 +7,8 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
-	"time"
+	// "strconv"
+	// "time"
 
 	// "strconv"
 
@@ -214,65 +214,80 @@ func courseCancelHandler(ctx *gin.Context) {
 	}
 }
 
-func timeTaskCreateHandler(ctx *gin.Context) {
-	return
-	clazzId := ctx.Query("clazzId")
-	selectedType := ctx.Query("selectedType")
-	selectedCate := ctx.Query("selectedCate")
-	freq := ctx.Query("freq")
-	dur := ctx.Query("dur")
-	ok, err := client.createTimeTask(clazzId, selectedType, selectedCate, freq, dur)
-	if ok {
-		ctx.JSON(200, gin.H{"state": "success", "msg": "ok"})
-	} else {
-		ctx.JSON(200, gin.H{"state": "fail", "msg": err.Error()})
-	}
-	return
-}
-
-func timeTaskDeleteHandler(ctx *gin.Context) {
-	return
-	clazzId := ctx.Query("clazzId")
-	ok, err := client.deleteTimeTask(clazzId)
-	if ok {
-		ctx.JSON(200, gin.H{"state": "success", "msg": "ok"})
-	} else {
-		ctx.JSON(200, gin.H{"state": "fail", "msg": err.Error()})
-	}
-	return
-}
-
-func timeTaskReportHandler(ctx *gin.Context) {
-	clazzId := ctx.Query("clazzId")
-	msg := client.reportTimeTask(clazzId)
-	ctx.JSON(200, gin.H{"state": "success", "msg": msg})
-}
-
-func courseRefreshTest(ctx *gin.Context) {
-	totalCnt_ := ctx.Query("totalCnt")
-	totalCnt, err := strconv.Atoi(totalCnt_)
-	if err != nil {
-		log.Println(err)
+func selectCourseInfoHandler(ctx *gin.Context) {
+	data := client.selectCourseInfo()
+	if data == nil {
 		return
 	}
-	log.Println("in courseRefresh Test")
-	template := `{"pageNo":1,"pageSize":10,"param":{"semesterYear":"2020-1","selectedType":"%s","selectedCate":"21","hiddenConflictStatus":"0","hiddenSelectedStatus":"0","hiddenEmptyStatus":"0","vacancySortStatus":"0","collectionStatus":"0","studyCampusId":"5063559"}}`
-	log.Println("Begin Refresh TEST")
-	beg := time.Now().Unix()
-	for i := 0; i < totalCnt; i++ {
-		rows, err := client.getCourseList(fmt.Sprintf(template, getSelectedType("校级公选")))
-		log.Printf("[Test %d] len(rows) = %d\n", i, len(rows))
-		if len(rows) == 0 {
-			log.Println("Something Error")
-		}
-		if err != nil {
-			log.Println("ERROR: ", err)
-		}
+	realCode := data["data"].(map[string]interface{})["code"]
+	if data["code"].(float64) == 200 && realCode.(float64) == 200 {
+		// ok
+		log.Println(data["data"].(map[string]interface{})["electiveCourseStageName"].(string))
+		ctx.JSON(200, gin.H{"state": "success", "data": data["data"]})
+	} else {
+		ctx.JSON(200, gin.H{"state": "fail", "data": data["data"]})
 	}
-	end := time.Now().Unix()
-	log.Println("----------------------------")
-	log.Println("Success with for-loop:", totalCnt, " in ", end-beg, "s")
 }
+
+// func timeTaskCreateHandler(ctx *gin.Context) {
+// 	return
+// 	clazzId := ctx.Query("clazzId")
+// 	selectedType := ctx.Query("selectedType")
+// 	selectedCate := ctx.Query("selectedCate")
+// 	freq := ctx.Query("freq")
+// 	dur := ctx.Query("dur")
+// 	ok, err := client.createTimeTask(clazzId, selectedType, selectedCate, freq, dur)
+// 	if ok {
+// 		ctx.JSON(200, gin.H{"state": "success", "msg": "ok"})
+// 	} else {
+// 		ctx.JSON(200, gin.H{"state": "fail", "msg": err.Error()})
+// 	}
+// 	return
+// }
+
+// func timeTaskDeleteHandler(ctx *gin.Context) {
+// 	return
+// 	clazzId := ctx.Query("clazzId")
+// 	ok, err := client.deleteTimeTask(clazzId)
+// 	if ok {
+// 		ctx.JSON(200, gin.H{"state": "success", "msg": "ok"})
+// 	} else {
+// 		ctx.JSON(200, gin.H{"state": "fail", "msg": err.Error()})
+// 	}
+// 	return
+// }
+
+// func timeTaskReportHandler(ctx *gin.Context) {
+// 	clazzId := ctx.Query("clazzId")
+// 	msg := client.reportTimeTask(clazzId)
+// 	ctx.JSON(200, gin.H{"state": "success", "msg": msg})
+// }
+
+// func courseRefreshTest(ctx *gin.Context) {
+// 	totalCnt_ := ctx.Query("totalCnt")
+// 	totalCnt, err := strconv.Atoi(totalCnt_)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return
+// 	}
+// 	log.Println("in courseRefresh Test")
+// 	template := `{"pageNo":1,"pageSize":10,"param":{"semesterYear":"2020-1","selectedType":"%s","selectedCate":"21","hiddenConflictStatus":"0","hiddenSelectedStatus":"0","hiddenEmptyStatus":"0","vacancySortStatus":"0","collectionStatus":"0","studyCampusId":"5063559"}}`
+// 	log.Println("Begin Refresh TEST")
+// 	beg := time.Now().Unix()
+// 	for i := 0; i < totalCnt; i++ {
+// 		rows, err := client.getCourseList(fmt.Sprintf(template, getSelectedType("校级公选")))
+// 		log.Printf("[Test %d] len(rows) = %d\n", i, len(rows))
+// 		if len(rows) == 0 {
+// 			log.Println("Something Error")
+// 		}
+// 		if err != nil {
+// 			log.Println("ERROR: ", err)
+// 		}
+// 	}
+// 	end := time.Now().Unix()
+// 	log.Println("----------------------------")
+// 	log.Println("Success with for-loop:", totalCnt, " in ", end-beg, "s")
+// }
 
 func main() {
 	if client == nil {
@@ -293,10 +308,11 @@ func main() {
 	rt.GET("/teacherInfo/all", teacherInfo_all)
 	rt.GET("/course/choose", courseChooseHandler)
 	rt.GET("/course/cancel", courseCancelHandler)
-	rt.GET("/course/timeTask/create", timeTaskCreateHandler)
-	rt.GET("/course/timeTask/delete", timeTaskDeleteHandler)
-	rt.GET("/course/timeTask/report", timeTaskReportHandler)
-	rt.GET("/course/refreshTest", courseRefreshTest)
+	rt.GET("/course/selectInfo", selectCourseInfoHandler)
+	// rt.GET("/course/timeTask/create", timeTaskCreateHandler)
+	// rt.GET("/course/timeTask/delete", timeTaskDeleteHandler)
+	// rt.GET("/course/timeTask/report", timeTaskReportHandler)
+	// rt.GET("/course/refreshTest", courseRefreshTest)
 	// rt.GET("/captcha", captcha)
 	// rt.POST("/login", loginHandler)
 	// rt.GET("/index", indexHandler)

@@ -10,55 +10,21 @@
 
 <body>
   <div id="app" style="height: 100%;">
-    <el-dialog :visible.sync="dialog_visible" title="定时任务单">
-      <el-form ref="form" :model="form" label-width="80px">
-        <el-form-item label="课程名称">
-          <el-input v-model="form.name" :disabled="true"></el-input>
-        </el-form-item>
-        <el-form-item label="开课校园">
-          <el-input v-model="form.region" :disabled="true" width=10px></el-input>
-        </el-form-item>
-        <!-- <el-divider></el-divider> -->
-        <el-form-item label="任务持续时间">
-          <el-select v-model="form.dur" placeholder="请选择持续时间">
-            <el-option label="6s" value="0.1"></el-option>
-            <el-option label="1min" value="1"></el-option>
-            <el-option label="10min" value="10"></el-option>
-            <el-option label="30min" value="30"></el-option>
-            <el-option label="1h" value="60"></el-option>
-            <el-option label="2h" value="120"></el-option>
-            <el-option label="5h" value="300"></el-option>
-            <el-option label="10h" value="600"></el-option>
-            <el-option label="24h" value="1440"></el-option>
-            <el-option label="No Limit" value="999999"></el-option>
-          </el-select>
-        </el-form-item>
-        <!-- <el-divider></el-divider> -->
-        <el-form-item label="抢课频率">
-          <el-select v-model="form.freq" placeholder="请选择抢课频率">
-            <el-option label="0s(代表无睡眠时间,急速抢课)" value="0"></el-option>
-            <el-option label="0.1s" value="0.1"></el-option>
-            <el-option label="0.5s" value="0.5"></el-option>
-            <el-option label="1s" value="1"></el-option>
-            <el-option label="2s" value="2"></el-option>
-            <el-option label="5s" value="5"></el-option>
-            <el-option label="10s" value="10"></el-option>
-            <el-option label="15s" value="15"></el-option>
-            <el-option label="30s" value="30"></el-option>
-            <el-option label="1min" value="60"></el-option>
-            <el-option label="5min" value="300"></el-option>
-            <el-option label="10min" value="600"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="beginTimeTask">开始任务</el-button>
-          <el-button @click="dialog_visible = false">取消</el-button>
-        </el-form-item>
-      </el-form>
-    </el-dialog>
 
     <el-dialog :visible.sync="bigImgVisible" title="TeacherImg">
       <el-image :src="bigImgSrc" style="height: 500px;width: 400px;"></el-image>
+    </el-dialog>
+    <el-dialog :visible.sync="useInfoVisible" title="Attention">
+      <p>本系统已删除抢课相关!</p>
+      <p>
+        本系统现只支持查看老师信息如邮箱照片,当鼠标移到那一行后会自动加载
+      </p>
+      <p>若加载失败,可能是未录入信息"</p>
+      </p>
+      <el-divider></el-divider>
+      <p>说明: 若被拉黑名单,需要写检查交给自己的教务老师,然后让教务老师联系管选课的李老师移出黑名单</p>
+      <p>使用本系统,不会被拉黑名单</p>
+      <p>当用户无法选课时,将不会提供课程列表,因为课程列表是通过选课来获取的,而不是可选课程; 此时去访问选课接口的课程列表,有可能被拉黑名单</p>
     </el-dialog>
 
     <el-container style=" height: 100%; ">
@@ -70,17 +36,18 @@
       <el-main style="position: relative;">
         <template>
           <el-tabs v-model="activeName" @tab-click="" tab-position="left" style="width: 100%; height:90%; 
-            position: absolute; right: 0;margin-top: 20px; padding-bottom: 2px; ">
+            position: absolute; right: 0;margin-top: 20px; padding-bottom: 2px; " >
             <el-tab-pane label="用户管理" name="first">
               <template>
                 <p>User: {{ userName }} , {{ userId}} , {{ departmentName }} |
                   专业:{{major}}</p>
-                <el-button @click="refreshTest">refreshTest</el-button>
+                <p>阶段: {{electiveCourseStageName}}</p>
+                <el-button @click="useInfoVisible = true">查看使用信息</el-button>
               </template>
             </el-tab-pane>
             <template v-for="it in tableData">
               <el-tab-pane class="test" :label="it.label" :name="it.name"
-                style="height: 100%;overflow: auto ;padding-right: 3%;">
+                style="height: 100%;overflow: auto ;padding-right: 3%;" :disabled="isDisableTab">
                 <template>
                   <el-backtop target=".test" :right="120">UP</el-backtop>
                   <el-table @cell-mouse-enter="handleHover" v-loading="it.loading"
@@ -151,69 +118,12 @@
                           :disabled="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? true:false"
                           @click="chooseCourse(scope.$index, scope.row , 'public')" v-else>选课
                         </el-button>
-                        <el-button size="small" :disabled="scope.row.collectionStatus == '1' ? true:false"
-                          @click="addTimeTask(scope.$index, scope.row , 'public')">加入定时任务</el-button>
                       </template>
                     </el-table-column>
                   </el-table>
                 </template>
               </el-tab-pane>
             </template>
-            <el-tab-pane label="定时任务" name="fourth" style="padding-right: 3%;">
-              <template>
-                <el-backtop target=".test" right="120">UP</el-backtop>
-                <el-table
-                  :data="tableDataTimeTask.filter(data => !search || data.courseName.toLowerCase().includes(search.toLowerCase()))"
-                  style="width: 100%">
-                  <el-table-column label="CourseNum" prop="courseNum">
-                  </el-table-column>
-                  <el-table-column label="CourseName" prop="courseName">
-                  </el-table-column>
-                  <el-table-column label="TeacherName">
-                    <template slot-scope="scope">
-                      {{scope.row.teachingTimePlace.split(',')[0]}}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="Credit" prop="credit">
-                  </el-table-column>
-                  <el-table-column label="CourseUnitName" prop="courseUnitName">
-                  </el-table-column>
-                  <el-table-column label="Capacity" prop="capacity">
-                    <template slot-scope="scope">
-                      <el-tag :type="scope.row.courseSelectedNum == scope.row.baseReceiveNum ? 'danger':'success'">
-                        {{scope.row.courseSelectedNum}}/{{scope.row.baseReceiveNum}}</el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="任务状态" prop="timeTaskState">
-                  </el-table-column>
-                  <el-table-column label="运行时间" prop="timeElapsed">
-                  </el-table-column>
-                  <el-table-column label="剩余时间" prop="timeLeft">
-                  </el-table-column>
-                  <el-table-column label="日志" prop="log" width="150px">
-                    <template slot-scope="scope">
-                      <p v-for="it in scope.row.log.split(';')">{{it}}</p>
-                    </template>
-                  </el-table-column>
-                  <el-table-column align="right">
-                    <template slot="header" slot-scope="scope">
-                      <el-input v-model="searchTimeTask" size="mini" placeholder="输入关键字搜索" />
-                    </template>
-                    <template slot-scope="scope">
-                      <el-button size="small" type="success" v-if="scope.row.timeTaskState == '未开始'"
-                        @click="pullTaskForm(scope.$index, scope.row)">
-                        开始定时任务
-                      </el-button>
-                      <el-button size="small" type="danger" :disabled="scope.row.timeTaskState == '已结束'"
-                        @click="deleteTimeTask(scope.$index, scope.row)" v-else>
-                        {{scope.row.timeTaskState == '已结束' ? "定时任务完成":"结束定时任务"}}
-                      </el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </template>
-
-            </el-tab-pane>
           </el-tabs>
         </template>
       </el-main>
@@ -238,8 +148,11 @@
         major: "Not Login",
         activeName: 'first',
         dialog_visible: false,
+        useInfoVisible: true,
         bigImgVisible: false,
         bigImgSrc: "",
+        electiveCourseStageName: "",
+        isDisableTab: false,
         form: {
           name: 'fdsa',
           region: 'fdas',
@@ -265,8 +178,6 @@
             data: []
           }
         ],
-        tableDataTimeTask: [],
-        searchTimeTask: ''
 
       }
     },
@@ -275,18 +186,32 @@
     },
     watch: {
       'activeName': function (val) {
+        if (val == "first") return
         this.getAndSetCourse(val)
       },
     },
     mounted() {
       this.getAndSetUserInfo()
-
+      this.selectCourseInfo()
       // moved to watch()
       // this.getAndSetCourse("public")
       // this.getAndSetCourse("major")
 
     },
     methods: {
+      selectCourseInfo() {
+        this.$http.get("/course/selectInfo").then(function (resp) {
+          if (resp.body.state == "fail") {
+            this.$message.error("阶段错误,禁止选课")
+            // window.location.replace("/errorPage.html")
+            this.electiveCourseStageName = "未知阶段: 不在选课阶段或学费未交或在jwxt黑名单中"
+            this.isDisableTab = true
+          } else {
+            // console.log(resp.body.data.electiveCourseStageName)
+            this.electiveCourseStageName = resp.body.data.electiveCourseStageName
+          }
+        })
+      },
       refreshTest() {
         this.$http.get("/course/refreshTest?totalCnt=100")
       },

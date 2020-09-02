@@ -441,3 +441,23 @@ func (client *Client) isCourseAvailable(classId, selectedType, selectedCate stri
 	}
 	return false, err
 }
+
+func (client *Client) selectCourseInfo() map[string]interface{} {
+	url := "https://jwxt.sysu.edu.cn/jwxt/choose-course-front-server/classCourseInfo/selectCourseInfo"
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
+	req.Header.Add("Referer", urlLists.baseUrl+"jwxt/mk/courseSelection/")
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer resp.Body.Close()
+	var data map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return data
+}
