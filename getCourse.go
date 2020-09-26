@@ -194,6 +194,59 @@ func (client *Client) getCourseList(payload string) ([]row, error) {
 	}
 	return totalCourses, nil
 }
+func (client *Client) getCourseList_v2(payload string) ([]row, error) {
+	// jsonBody := `{"pageNo":1,"pageSize":10,"param":{"semesterYear":"2019-2","selectedType":"4","selectedCate":"11","hiddenConflictStatus":"0","hiddenSelectedStatus":"0","collectionStatus":"0"}}`
+	// jsonBody := `{"pageNo":1,"pageSize":10,"param":{"semesterYear":"2019-2","selectedType":"1","selectedCate":"21","hiddenConflictStatus":"0","hiddenSelectedStatus":"0","collectionStatus":"0"}}`
+
+	//时间戳,不加也行
+	// timestamp := time.Now().Unix()
+	// var courseListUrl_t =  courseListUrl + "?_t=" + fmt.Sprintf("%d", timestamp)
+
+	// log.Println("courseListUrl : ", urlLists.courseListUrl)
+	// log.Println("Query params :", payload)
+	url := "https://jwxt.sysu.edu.cn/jwxt/choose-course-front-server/schoolCourse/pageList"
+	courseListReq, _ := http.NewRequest("POST", url, strings.NewReader(payload))
+	courseListReq.Header.Add("Content-Type", "application/json;charset=UTF-8")
+	courseListReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
+	courseListReq.Header.Add("Referer", urlLists.baseUrl+"jwxt/mk/courseSelection/")
+	courseListResp, _ := client.Do(courseListReq)
+	defer courseListResp.Body.Close()
+	b, _ := ioutil.ReadAll(courseListResp.Body)
+	// ioutil.WriteFile("a.json", b, 0777)
+	courseList := courseSelectList{}
+	err := json.Unmarshal(b, &courseList)
+	if err != nil {
+		return nil, err
+	}
+	if courseList.Code != 200 {
+		log.Println("error code:", courseList.Code, " msg:", courseList.Message)
+	}
+	if courseList.Code == 52021136 {
+		log.Println("黑名单")
+	}
+	totalCourses := courseList.Data.Rows
+	//寻找有空位的课
+	n_courses := courseList.Data.Total
+	var times = n_courses / 10 // 10 is one page size
+	for i := 0; i < times; i++ {
+		payload = strings.ReplaceAll(payload, `"pageNo":`+fmt.Sprintf("%d", i+1), `"pageNo":`+fmt.Sprintf("%d", i+2))
+		courseListReq2, _ := http.NewRequest("POST", urlLists.courseListUrl, strings.NewReader(payload))
+		courseListReq2.Header.Add("Content-Type", "application/json;charset=UTF-8")
+		courseListReq2.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
+		courseListReq2.Header.Add("Referer", urlLists.baseUrl+"jwxt/mk/courseSelection/")
+
+		resp2, _ := client.Do(courseListReq2)
+		defer resp2.Body.Close()
+		b, _ := ioutil.ReadAll(resp2.Body)
+		courseList := courseSelectList{}
+		err := json.Unmarshal(b, &courseList)
+		if err != nil {
+			return nil, err
+		}
+		totalCourses = append(totalCourses, courseList.Data.Rows...)
+	}
+	return totalCourses, nil
+}
 
 func (client *Client) courseChoose(clazzId, selectedType, selectedCate string) (bool, string) {
 	// courseSelectionChooseBody := `{"clazzId":"1201412705275330561","selectedType":"1","selectedCate":"21","check":true}` //专选 ,classid是teachingclassid
