@@ -62,7 +62,7 @@
       login() {
         var formData = JSON.stringify(this.form)
         // this.$message(formData);
-        this.$http.post("/", formData).then(function (resp) {
+        this.$http.post("/login", formData).then(function (resp) {
           var json_str = JSON.stringify(resp.body)
           var data = JSON.parse(json_str)
           this.$notify({

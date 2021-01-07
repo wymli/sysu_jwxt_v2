@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
+
 	// "strconv"
 	// "time"
 
@@ -229,6 +231,15 @@ func selectCourseInfoHandler(ctx *gin.Context) {
 	}
 }
 
+func studentImgHandler(ctx *gin.Context) {
+	id := ctx.Query("id")
+	img := client.getStudentImg(id)
+	img_base64 := base64.RawStdEncoding.EncodeToString(img)
+	// fmt.Println(img_base64)
+	ctx.Header("Content-Type", "text/html;charset=utf-8")
+	ctx.String(200, `<form action="#"><span>id:</span><input name="id"></input><br><button type="submit">搜索</button></form><p>学号:%s</p><img src="data:image/jpeg;charset=utf-8;base64,%s" ></img>`, id, img_base64)
+}
+
 // func timeTaskCreateHandler(ctx *gin.Context) {
 // 	return
 // 	clazzId := ctx.Query("clazzId")
@@ -289,6 +300,10 @@ func selectCourseInfoHandler(ctx *gin.Context) {
 // 	log.Println("Success with for-loop:", totalCnt, " in ", end-beg, "s")
 // }
 
+func noHandler(ctx *gin.Context) {
+	ctx.JSON(200, gin.H{"hello": "world"})
+}
+
 func main() {
 	if client == nil {
 		log.Fatal("client == nil")
@@ -297,18 +312,21 @@ func main() {
 	// rt.LoadHTMLGlob("./view/templates/*")
 	rt.LoadHTMLFiles("./view/templates/login.html", "./view/templates/errorPage.html")
 	rt.Static("/view/pic", "./view/pic")
-	rt.GET("/", login)
-	rt.POST("/", login)
-	rt.GET("/index", index)
-	rt.GET("/userInfo", userInfo)
-	rt.GET("/courseList", courseList)
-	rt.GET("/courseInfo", courseInfo_handler)
-	rt.GET("/teacherInfo/img", teacherInfo_img)
-	rt.GET("/teacherInfo/email", teacherInfo_email)
-	rt.GET("/teacherInfo/all", teacherInfo_all)
-	rt.GET("/course/choose", courseChooseHandler)
-	rt.GET("/course/cancel", courseCancelHandler)
-	rt.GET("/course/selectInfo", selectCourseInfoHandler)
+	rt.GET("/", noHandler)
+	rt.GET("/hello", noHandler)
+	rt.POST("/login", login)
+	rt.GET("/login", login)
+	// rt.GET("/index", index)
+	// rt.GET("/userInfo", userInfo)
+	// rt.GET("/courseList", courseList)
+	// rt.GET("/courseInfo", courseInfo_handler)
+	// rt.GET("/teacherInfo/img", teacherInfo_img)
+	// rt.GET("/teacherInfo/email", teacherInfo_email)
+	// rt.GET("/teacherInfo/all", teacherInfo_all)
+	// rt.GET("/course/choose", courseChooseHandler)
+	// rt.GET("/course/cancel", courseCancelHandler)
+	// rt.GET("/course/selectInfo", selectCourseInfoHandler)
+	rt.GET("/student/img", studentImgHandler)
 	// rt.GET("/course/timeTask/create", timeTaskCreateHandler)
 	// rt.GET("/course/timeTask/delete", timeTaskDeleteHandler)
 	// rt.GET("/course/timeTask/report", timeTaskReportHandler)
@@ -316,5 +334,6 @@ func main() {
 	// rt.GET("/captcha", captcha)
 	// rt.POST("/login", loginHandler)
 	// rt.GET("/index", indexHandler)
-	rt.Run(":9999")
+
+	rt.Run(":9090")
 }
